@@ -7,6 +7,7 @@ import 'package:e_commerce/presentation/cubit/profile_state.dart';
 import 'package:e_commerce/presentation/screens/cart_screen.dart';
 import 'package:e_commerce/presentation/screens/favorites_screen.dart';
 import 'package:e_commerce/presentation/screens/login_screen.dart';
+import 'package:e_commerce/presentation/screens/edit_profile_screen.dart';
 import 'package:e_commerce/presentation/screens/orders_screen.dart';
 import 'package:e_commerce/presentation/widgets/auth_custom_widgets.dart';
 import 'package:flutter/material.dart';
@@ -235,7 +236,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       icon: Icons.person_outline_rounded,
                       title: 'Personal Details',
                       subtitle: 'Update your name, email & phone',
-                      onTap: () => _showEditProfileBottomSheet(user),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const EditProfileScreen(),
+                        ),
+                      ),
                     ),
                     _buildDivider(),
                     _buildSettingsTile(

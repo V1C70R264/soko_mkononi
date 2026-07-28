@@ -6,6 +6,7 @@ import 'package:e_commerce/data/repositories/auth_repository_impl.dart';
 import 'package:e_commerce/data/repositories/user_repository.dart';
 import 'package:e_commerce/domain/repositories/auth_repository.dart';
 import 'package:e_commerce/domain/usecases/user/get_user_profile.dart';
+import 'package:e_commerce/domain/usecases/user/update_profile_details.dart';
 import 'package:e_commerce/domain/usecases/user/update_user_profile_image.dart';
 import 'package:e_commerce/presentation/cubit/profile_cubit.dart';
 import 'package:e_commerce/presentation/screens/home_screen.dart';
@@ -38,12 +39,17 @@ void main() {
   final userRepository = UserRepositoryImpl(userRemote);
   final getUserProfile = GetUserProfile(userRepository);
   final updateUserProfileImage = UpdateUserProfileImage(userRepository);
+  final updateProfileDetails = UpdateProfileDetails(userRepository);
 
   runApp(
     MultiBlocProvider(
       providers: [
         BlocProvider(
-          create: (_) => ProfileCubit(getUserProfile, updateUserProfileImage),
+          create: (_) => ProfileCubit(
+            getUserProfile,
+            updateUserProfileImage,
+            updateProfileDetails,
+          ),
         ),
       ],
       child: const MyApp(),

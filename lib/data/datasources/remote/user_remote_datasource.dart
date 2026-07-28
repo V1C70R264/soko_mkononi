@@ -11,6 +11,12 @@ import 'package:http_parser/http_parser.dart';
 abstract class UserRemoteDatasource {
   Future<UserModel> fetchUserProfile();
   Future<UserModel> updateProfileImage(File image);
+  Future<UserModel> updateProfileDetails({
+    String? username,
+    String? firstName,
+    String? lastName,
+    String? phoneNumber,
+  });
 }
 
 class UserRemoteDatasourceImpl implements UserRemoteDatasource {
@@ -121,6 +127,48 @@ class UserRemoteDatasourceImpl implements UserRemoteDatasource {
     } catch (_) {}
 
     throw Exception('Failed to upload profile image');
+  }
+
+  @override
+  Future<UserModel> updateProfileDetails({
+    String? username,
+    String? firstName,
+    String? lastName,
+    String? phoneNumber,
+  }) async {
+    final token = await apiClient.tokenStorage.getAccessToken();
+    if (token == null) throw Exception('No access token found');
+
+    // Build the PATCH body — omit null fields so the backend
+    // treats them as untouched (partial update).
+    final body = <String, dynamic>{};
+    if (username != null) body['username'] = username;
+    if (firstName != null) body['first_name'] = firstName;
+    if (lastName != null) body['last_name'] = lastName;
+    if (phoneNumber != null) {
+      body['phone'] = phoneNumber;
+      body['phone_number'] = phoneNumber; // accept both conventions
+    }
+
+    try {
+      final response = await apiClient.dio.patch(
+        ApiPaths.profile,
+        data: body,
+      );
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return _parseUserResponse(response.data);
+      }
+      // Some backends return 204 No Content — refetch profile in that case.
+      if (response.statusCode == 204) {
+        return fetchUserProfile();
+      }
+      throw Exception('Unexpected status: ${response.statusCode}');
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401) {
+        throw Exception('Session expired. Please log in again.');
+      }
+      throw Exception(_errorMessage(e, 'Failed to update profile'));
+    }
   }
 
   UserModel _parseUserResponse(dynamic body) {
