@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../core/utils/result.dart';
+import '../../domain/entities/user.dart';
 import '../../domain/usecases/auth/signin_with_google.dart';
 import 'auth_state.dart';
 
@@ -16,7 +17,7 @@ class AuthCubit extends Cubit<AuthState> {
 
     final result = await signInWithGoogle();
 
-    if (result is Success) {
+    if (result is Success<User>) {
       emit(
         state.copyWith(
           user: result.data,
@@ -25,7 +26,7 @@ class AuthCubit extends Cubit<AuthState> {
           error: null,
         ),
       );
-    } else if (result is Error) {
+    } else if (result is Error<User>) {
       emit(
         state.copyWith(
           isLoading: false,
