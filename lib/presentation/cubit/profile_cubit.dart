@@ -24,7 +24,7 @@ class ProfileCubit extends Cubit<ProfileState> {
     emit(state.copyWith(loading: true, error: null));
     try {
       final user = await getUserProfile();
-      emit(state.copyWith(user: user, loading: false));
+      emit(state.copyWith(user: user, loading: false, error: null));
     } catch (e) {
       emit(state.copyWith(error: e.toString(), loading: false));
     }
@@ -32,13 +32,26 @@ class ProfileCubit extends Cubit<ProfileState> {
 
   // ─── Profile image upload ───────────────────────────────────────────────────
 
-  Future<void> uploadProfileImage(File image) async {
+  Future<bool> uploadProfileImage(File image) async {
     emit(state.copyWith(isUploading: true, error: null));
     try {
-      final user = await updateUserProfileImage(image);
-      emit(state.copyWith(user: user, isUploading: false));
+      await updateUserProfileImage(image);
+      // Always refetch — PATCH responses may omit profile_image or return a
+      // stale URL while the backend uploads to Cloudinary asynchronously.
+      final user = await getUserProfile();
+      emit(
+        state.copyWith(
+          user: user,
+          isUploading: false,
+          error: null,
+          profileImageVersion: state.profileImageVersion + 1,
+        ),
+      );
+      return true;
     } catch (e) {
-      emit(state.copyWith(error: e.toString(), isUploading: false));
+      final errorMsg = e.toString().replaceAll(RegExp(r'^Exception:\s*'), '');
+      emit(state.copyWith(error: errorMsg, isUploading: false));
+      return false;
     }
   }
 
@@ -61,7 +74,7 @@ class ProfileCubit extends Cubit<ProfileState> {
         lastName: lastName,
         phoneNumber: phoneNumber,
       );
-      emit(state.copyWith(user: user, isSaving: false, updateSuccess: true));
+      emit(state.copyWith(user: user, isSaving: false, updateSuccess: true, error: null));
     } catch (e) {
       emit(state.copyWith(error: e.toString(), isSaving: false));
     }

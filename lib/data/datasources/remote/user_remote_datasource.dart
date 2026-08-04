@@ -5,8 +5,6 @@ import 'package:dio/dio.dart';
 import 'package:e_commerce/core/constants/api_paths.dart';
 import 'package:e_commerce/core/network/api_client.dart';
 import 'package:e_commerce/data/models/user_model.dart';
-import 'package:http/http.dart' as http;
-import 'package:http_parser/http_parser.dart';
 
 abstract class UserRemoteDatasource {
   Future<UserModel> fetchUserProfile();
@@ -47,86 +45,86 @@ class UserRemoteDatasourceImpl implements UserRemoteDatasource {
   Future<UserModel> updateProfileImage(File image) async {
     final token = await apiClient.tokenStorage.getAccessToken();
     if (token == null) {
-      throw Exception('No access token found');
+      throw Exception('Session expired. Please log in again.');
     }
 
-    final bytes = await image.readAsBytes();
-    final base64Str = base64Encode(bytes);
-    final ext = image.path.split('.').last.toLowerCase();
-    final mimeSubType = (ext == 'png') ? 'png' : 'jpeg';
-    final dataUri = 'data:image/$mimeSubType;base64,$base64Str';
+    final fileName = image.path.split(RegExp(r'[/\\]')).last;
+    final ext = fileName.contains('.')
+        ? fileName.split('.').last.toLowerCase()
+        : 'jpg';
+    final mimeSubType =
+        ext == 'png' ? 'png' : (ext == 'webp' ? 'webp' : 'jpeg');
 
-    // 1. Try Base64 Data URI string JSON PATCH (common for OpenAPI string($binary) schemas)
+    Future<FormData> buildForm(String field) async {
+      return FormData.fromMap({
+        field: await MultipartFile.fromFile(
+          image.path,
+          filename: fileName,
+          contentType: DioMediaType.parse('image/$mimeSubType'),
+        ),
+      });
+    }
+
+    // Backend uploads to Cloudinary and stores the URL — the app sends the
+    // file here. After any successful upload, always refetch the full profile
+    // so we get the definitive Cloudinary URL (PATCH bodies often omit it).
+    final uploadAttempts = <Future<Response<dynamic>> Function()>[
+      () async => apiClient.dio.patch(
+            ApiPaths.profile,
+            data: await buildForm('profile_image'),
+          ),
+      () async => apiClient.dio.patch(
+            ApiPaths.profile,
+            data: await buildForm('avatar'),
+          ),
+      () async => apiClient.dio.put(
+            ApiPaths.profile,
+            data: await buildForm('profile_image'),
+          ),
+    ];
+
+    DioException? lastError;
+
+    for (final send in uploadAttempts) {
+      try {
+        final response = await send();
+        if (_isUploadSuccess(response.statusCode)) {
+          return fetchUserProfile();
+        }
+      } on DioException catch (e) {
+        if (e.response?.statusCode == 401) {
+          throw Exception('Session expired. Please log in again.');
+        }
+        lastError = e;
+      }
+    }
+
+    // Last resort: base64 JSON PATCH (some backends accept this format).
     try {
+      final bytes = await image.readAsBytes();
+      final dataUri =
+          'data:image/$mimeSubType;base64,${base64Encode(bytes)}';
       final response = await apiClient.dio.patch(
         ApiPaths.profile,
-        data: {
-          'avatar': dataUri,
-          'profile_image': dataUri,
-        },
+        data: {'profile_image': dataUri},
       );
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return _parseUserResponse(response.data);
+      if (_isUploadSuccess(response.statusCode)) {
+        return fetchUserProfile();
       }
-    } catch (_) {}
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401) {
+        throw Exception('Session expired. Please log in again.');
+      }
+      lastError = e;
+    }
 
-    // 2. Try raw Base64 string JSON PATCH
-    try {
-      final response = await apiClient.dio.patch(
-        ApiPaths.profile,
-        data: {
-          'avatar': base64Str,
-          'profile_image': base64Str,
-        },
+    if (lastError != null) {
+      throw Exception(
+        _errorMessage(lastError, 'Failed to upload profile image'),
       );
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return _parseUserResponse(response.data);
-      }
-    } catch (_) {}
+    }
 
-    // 3. Try single multipart file 'avatar'
-    try {
-      final uri = Uri.parse('${apiClient.dio.options.baseUrl}${ApiPaths.profile}');
-      final request = http.MultipartRequest('PATCH', uri)
-        ..headers['Authorization'] = 'Bearer $token'
-        ..files.add(
-          await http.MultipartFile.fromPath(
-            'avatar',
-            image.path,
-            contentType: MediaType('image', mimeSubType),
-          ),
-        );
-
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final body = jsonDecode(response.body);
-        return _parseUserResponse(body);
-      }
-    } catch (_) {}
-
-    // 4. Try single multipart file 'profile_image'
-    try {
-      final uri = Uri.parse('${apiClient.dio.options.baseUrl}${ApiPaths.profile}');
-      final request = http.MultipartRequest('PATCH', uri)
-        ..headers['Authorization'] = 'Bearer $token'
-        ..files.add(
-          await http.MultipartFile.fromPath(
-            'profile_image',
-            image.path,
-            contentType: MediaType('image', mimeSubType),
-          ),
-        );
-
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final body = jsonDecode(response.body);
-        return _parseUserResponse(body);
-      }
-    } catch (_) {}
-
-    throw Exception('Failed to upload profile image');
+    throw Exception('Failed to upload profile image. Please try again.');
   }
 
   @override
@@ -171,6 +169,9 @@ class UserRemoteDatasourceImpl implements UserRemoteDatasource {
     }
   }
 
+  bool _isUploadSuccess(int? statusCode) =>
+      statusCode == 200 || statusCode == 201 || statusCode == 204;
+
   UserModel _parseUserResponse(dynamic body) {
     Map<String, dynamic> userJson;
     if (body is Map<String, dynamic>) {
@@ -192,6 +193,9 @@ class UserRemoteDatasourceImpl implements UserRemoteDatasource {
     final data = e.response?.data;
     if (data is Map<String, dynamic> && data['detail'] != null) {
       return data['detail'].toString();
+    }
+    if (data is Map<String, dynamic> && data['message'] != null) {
+      return data['message'].toString();
     }
     return fallback;
   }

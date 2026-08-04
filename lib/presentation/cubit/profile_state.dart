@@ -1,6 +1,9 @@
 import 'package:equatable/equatable.dart';
 import '../../domain/entities/user.dart';
 
+// Sentinel used to distinguish "pass null explicitly" from "not passed".
+const _kUndefined = Object();
+
 class ProfileState extends Equatable {
   final User? user;
 
@@ -17,6 +20,10 @@ class ProfileState extends Equatable {
   /// The UI should consume this and reset it (e.g. pop the edit screen).
   final bool updateSuccess;
 
+  /// Bumped after each successful image upload so avatar widgets can bust
+  /// Flutter/CDN caches even when the backend returns the same URL string.
+  final int profileImageVersion;
+
   final String? error;
 
   const ProfileState({
@@ -25,6 +32,7 @@ class ProfileState extends Equatable {
     this.isUploading = false,
     this.isSaving = false,
     this.updateSuccess = false,
+    this.profileImageVersion = 0,
     this.error,
   });
 
@@ -34,7 +42,9 @@ class ProfileState extends Equatable {
     bool? isUploading,
     bool? isSaving,
     bool? updateSuccess,
-    String? error,
+    int? profileImageVersion,
+    // Use Object? so callers can explicitly pass null to clear the error.
+    Object? error = _kUndefined,
   }) {
     return ProfileState(
       user: user ?? this.user,
@@ -42,11 +52,19 @@ class ProfileState extends Equatable {
       isUploading: isUploading ?? this.isUploading,
       isSaving: isSaving ?? this.isSaving,
       updateSuccess: updateSuccess ?? this.updateSuccess,
-      error: error,
+      profileImageVersion: profileImageVersion ?? this.profileImageVersion,
+      error: identical(error, _kUndefined) ? this.error : error as String?,
     );
   }
 
   @override
-  List<Object?> get props =>
-      [user, loading, isUploading, isSaving, updateSuccess, error];
+  List<Object?> get props => [
+        user,
+        loading,
+        isUploading,
+        isSaving,
+        updateSuccess,
+        profileImageVersion,
+        error,
+      ];
 }

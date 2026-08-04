@@ -93,13 +93,16 @@ class _GroceryHomeBody extends StatelessWidget {
                 children: [
                   BlocBuilder<ProfileCubit, ProfileState>(
                     builder: (context, state) {
-                      final userName = state.user?.fullName ??
-                          state.user?.username ??
-                          (state.user?.email.isNotEmpty == true
-                              ? state.user!.email.split('@').first
-                              : '');
+                      final user = state.user;
+                      final userName = user?.username?.trim().isNotEmpty == true
+                          ? user!.username!
+                          : (user?.fullName?.trim().isNotEmpty == true
+                              ? user!.fullName!
+                              : (user?.email.isNotEmpty == true
+                                  ? user!.email.split('@').first
+                                  : ''));
 
-                      final avatar = state.user?.profileImage ?? '';
+                      final avatar = user?.profileImage ?? '';
 
                       return HomeHeader(
                         userName: userName,

@@ -31,7 +31,7 @@ class UserModel {
       phoneNumber: json['phone']?.toString() ??
           json['phone_number']?.toString() ??
           json['phoneNumber']?.toString(),
-      profileImage: _resolveImageUrl(
+      profileImage: resolveImageUrl(
         json['profile_image'] ??
             json['avatar_url'] ??
             json['avatar'] ??
@@ -41,10 +41,14 @@ class UserModel {
     );
   }
 
-  static String? _resolveImageUrl(dynamic value) {
+  static String? resolveImageUrl(dynamic value) {
     if (value == null) return null;
+    if (value is Map) {
+      value = value['url'] ?? value['path'] ?? value['src'] ?? value['file'];
+      if (value == null) return null;
+    }
     final url = value.toString().trim();
-    if (url.isEmpty) return null;
+    if (url.isEmpty || url == 'null') return null;
     if (url.startsWith('http://') ||
         url.startsWith('https://') ||
         url.startsWith('data:image/')) {

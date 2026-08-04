@@ -25,10 +25,20 @@ class User {
       other is User &&
           runtimeType == other.runtimeType &&
           id == other.id &&
-          email == other.email;
+          email == other.email &&
+          username == other.username &&
+          fullName == other.fullName &&
+          phoneNumber == other.phoneNumber &&
+          profileImage == other.profileImage;
 
   @override
-  int get hashCode => id.hashCode ^ email.hashCode;
+  int get hashCode =>
+      id.hashCode ^
+      email.hashCode ^
+      (username?.hashCode ?? 0) ^
+      (fullName?.hashCode ?? 0) ^
+      (phoneNumber?.hashCode ?? 0) ^
+      (profileImage?.hashCode ?? 0);
 
   @override
   String toString() {

@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:e_commerce/core/theme/app_theme.dart';
+import 'package:e_commerce/data/models/user_model.dart';
 import 'package:e_commerce/domain/entities/user.dart';
 import 'package:e_commerce/main.dart';
 import 'package:e_commerce/presentation/cubit/profile_cubit.dart';
@@ -24,6 +26,10 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   File? _profileImage;
   bool _notificationsEnabled = true;
+
+  /// Unique key incremented on successful upload to bust Flutter's NetworkImage
+  /// cache so the avatar always re-renders with the fresh server image.
+  int _imageKey = 0;
 
   @override
   void initState() {
@@ -256,7 +262,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       subtitle: 'Promotions, orders & update alerts',
                       trailingWidget: Switch.adaptive(
                         value: _notificationsEnabled,
-                        activeColor: AppTheme.primaryGreen,
+                        activeThumbColor: AppTheme.primaryGreen,
+                        activeTrackColor: AppTheme.primaryGreen.withValues(alpha: 0.5),
                         onChanged: (val) {
                           setState(() {
                             _notificationsEnabled = val;
@@ -340,8 +347,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     required String emailText,
     required String phoneText,
   }) {
-    final hasNetImage = user?.profileImage != null && user!.profileImage!.trim().isNotEmpty;
-
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -380,6 +385,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     child: CircleAvatar(
                       radius: 42,
+                      key: ValueKey(_imageKey),
                       backgroundColor: Colors.white,
                       backgroundImage: _getProfileImageProvider(user?.profileImage, _profileImage),
                       child: (_profileImage == null && (user?.profileImage == null || user!.profileImage!.trim().isEmpty))
@@ -809,15 +815,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return FileImage(localFile);
     }
     if (imageUrl != null && imageUrl.trim().isNotEmpty) {
-      final trimmed = imageUrl.trim();
-      if (trimmed.startsWith('data:image/')) {
-        try {
-          final base64Data = trimmed.split(',').last;
-          final bytes = base64Decode(base64Data);
-          return MemoryImage(bytes);
-        } catch (_) {}
-      } else if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
-        return NetworkImage(trimmed);
+      final resolved = UserModel.resolveImageUrl(imageUrl);
+      if (resolved != null) {
+        if (resolved.startsWith('data:image/')) {
+          try {
+            final base64Data = resolved.split(',').last;
+            final bytes = base64Decode(base64Data);
+            return MemoryImage(bytes);
+          } catch (_) {}
+        } else if (resolved.startsWith('http://') || resolved.startsWith('https://')) {
+          return NetworkImage(resolved);
+        }
       }
     }
     return null;
@@ -891,118 +899,55 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _uploadProfileImage() async {
     if (_profileImage == null) return;
 
-    try {
-      await context.read<ProfileCubit>().uploadProfileImage(_profileImage!);
-      if (mounted) {
-        setState(() {
-          _profileImage = null; // Clear local temp file so network avatar URL persists
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Profile image updated successfully!'),
-            backgroundColor: AppTheme.primaryGreen,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to upload image: $e'),
-            backgroundColor: Colors.redAccent,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
+    final oldImageUrl = context.read<ProfileCubit>().state.user?.profileImage;
+
+    final success =
+        await context.read<ProfileCubit>().uploadProfileImage(_profileImage!);
+
+    if (!mounted) return;
+
+    // Evict old and new cached network images.
+    _evictNetworkImage(oldImageUrl);
+    final newImageUrl = context.read<ProfileCubit>().state.user?.profileImage;
+    _evictNetworkImage(newImageUrl);
+
+    if (success) {
+      setState(() {
+        _profileImage = null; // let state.user.profileImage drive the avatar
+        _imageKey++;          // bust the NetworkImage cache
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Profile photo updated successfully!'),
+          backgroundColor: AppTheme.primaryGreen,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } else {
+      final errorMsg =
+          context.read<ProfileCubit>().state.error ?? 'Failed to upload image';
+      setState(() => _profileImage = null);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(errorMsg),
+          backgroundColor: Colors.redAccent,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
   }
 
-  void _showEditProfileBottomSheet(User? user) {
-    final nameController = TextEditingController(text: user?.fullName ?? user?.username ?? '');
-    final phoneController = TextEditingController(text: user?.phoneNumber ?? '');
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
-          top: 20,
-          left: 20,
-          right: 20,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Edit Personal Details',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF1E262C),
-              ),
-            ),
-            const SizedBox(height: 20),
-            TextField(
-              controller: nameController,
-              decoration: InputDecoration(
-                labelText: 'Full Name',
-                prefixIcon: const Icon(Icons.person_outline),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: phoneController,
-              keyboardType: TextInputType.phone,
-              decoration: InputDecoration(
-                labelText: 'Phone Number',
-                prefixIcon: const Icon(Icons.phone_outlined),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
-              ),
-            ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(ctx);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Profile information updated'),
-                      backgroundColor: AppTheme.primaryGreen,
-                    ),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryGreen,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
-                ),
-                child: const Text('Save Changes', style: TextStyle(color: Colors.white, fontSize: 16)),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+  /// Evicts [url] from Flutter's image cache if it is a network URL.
+  void _evictNetworkImage(String? url) {
+    if (url == null || url.isEmpty) return;
+    final resolved = UserModel.resolveImageUrl(url);
+    if (resolved != null &&
+        (resolved.startsWith('http://') || resolved.startsWith('https://'))) {
+      NetworkImage(resolved).evict();
+    }
   }
+
+
 
   void _showLogoutDialog(BuildContext context) {
     showDialog(

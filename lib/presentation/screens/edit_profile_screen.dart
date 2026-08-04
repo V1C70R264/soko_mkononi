@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:e_commerce/core/theme/app_theme.dart';
+import 'package:e_commerce/data/models/user_model.dart';
 import 'package:e_commerce/domain/entities/user.dart';
 import 'package:e_commerce/presentation/cubit/profile_cubit.dart';
 import 'package:e_commerce/presentation/cubit/profile_state.dart';
@@ -46,6 +47,17 @@ class _EditProfileScreenState extends State<EditProfileScreen>
 
   /// Whether we've already seeded the form controllers (done once).
   bool _formSeeded = false;
+
+  /// Tracks the last error we showed to prevent duplicate snackbars.
+  String? _lastHandledError;
+
+  /// Unique key incremented on every successful image upload to bust
+  /// Flutter's NetworkImage cache so the avatar always shows fresh.
+  int _imageKey = 0;
+
+  /// Tracks whether an upload was in-progress on the previous state, so we
+  /// can detect the upload-done transition in [_handleStateChanges].
+  bool _wasUploading = false;
 
   // ─────────────────────────────────────────────────────────────────────────
 
@@ -95,15 +107,17 @@ class _EditProfileScreenState extends State<EditProfileScreen>
   ImageProvider? _resolveImageProvider(String? networkUrl, File? localFile) {
     if (localFile != null) return FileImage(localFile);
     if (networkUrl != null && networkUrl.trim().isNotEmpty) {
-      final trimmed = networkUrl.trim();
-      if (trimmed.startsWith('data:image/')) {
-        try {
-          final bytes = base64Decode(trimmed.split(',').last);
-          return MemoryImage(bytes);
-        } catch (_) {}
-      } else if (trimmed.startsWith('http://') ||
-          trimmed.startsWith('https://')) {
-        return NetworkImage(trimmed);
+      final resolved = UserModel.resolveImageUrl(networkUrl);
+      if (resolved != null) {
+        if (resolved.startsWith('data:image/')) {
+          try {
+            final bytes = base64Decode(resolved.split(',').last);
+            return MemoryImage(bytes);
+          } catch (_) {}
+        } else if (resolved.startsWith('http://') ||
+            resolved.startsWith('https://')) {
+          return NetworkImage(resolved);
+        }
       }
     }
     return null;
@@ -204,13 +218,41 @@ class _EditProfileScreenState extends State<EditProfileScreen>
     final picked = await picker.pickImage(source: source, imageQuality: 80);
     if (picked == null || !mounted) return;
 
-    setState(() => _localImage = File(picked.path));
+    final file = File(picked.path);
+    // Capture the old URL so we can evict Flutter's NetworkImage cache.
+    final oldImageUrl = context.read<ProfileCubit>().state.user?.profileImage;
 
-    await context.read<ProfileCubit>().uploadProfileImage(_localImage!);
+    // Show local preview immediately.
+    setState(() => _localImage = file);
 
+    // Reset the last handled error so the listener can react to a fresh error.
+    _lastHandledError = null;
+
+    await context.read<ProfileCubit>().uploadProfileImage(file);
+
+    // After upload, evict old & new cached network images and bump the key
+    // so Flutter ignores any cached NetworkImage for the avatar widget.
     if (mounted) {
-      setState(() => _localImage = null); // network URL now active
-      _showSuccess('Profile photo updated');
+      _evictNetworkImage(oldImageUrl);
+      final newImageUrl =
+          context.read<ProfileCubit>().state.user?.profileImage;
+      _evictNetworkImage(newImageUrl);
+
+      // Increment key to force CircleAvatar to re-render with fresh image.
+      setState(() {
+        _localImage = null;
+        _imageKey++;
+      });
+    }
+  }
+
+  /// Evicts [url] from Flutter's image cache if it is a network URL.
+  void _evictNetworkImage(String? url) {
+    if (url == null || url.isEmpty) return;
+    final resolved = UserModel.resolveImageUrl(url);
+    if (resolved != null &&
+        (resolved.startsWith('http://') || resolved.startsWith('https://'))) {
+      NetworkImage(resolved).evict();
     }
   }
 
@@ -304,7 +346,10 @@ class _EditProfileScreenState extends State<EditProfileScreen>
       onPopInvokedWithResult: (didPop, _) async {
         if (didPop) return;
         final shouldLeave = await _onWillPop();
-        if (shouldLeave && mounted) Navigator.of(context).pop();
+        if (shouldLeave && mounted) {
+          // ignore: use_build_context_synchronously
+          Navigator.of(context).pop();
+        }
       },
       child: Scaffold(
         backgroundColor: const Color(0xFFF8FAFC),
@@ -361,6 +406,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
 
                               // ── Avatar ────────────────────────────────────
                               _AvatarSection(
+                                key: ValueKey(_imageKey),
                                 user: user,
                                 localImage: _localImage,
                                 isUploading: state.isUploading,
@@ -413,15 +459,32 @@ class _EditProfileScreenState extends State<EditProfileScreen>
     if (state.updateSuccess) {
       context.read<ProfileCubit>().clearUpdateSuccess();
       _showSuccess('Profile updated successfully!');
+      final nav = Navigator.of(context);
       Future.delayed(const Duration(milliseconds: 600), () {
-        if (mounted) Navigator.of(context).pop();
+        if (mounted) nav.pop();
       });
     }
 
-    // Error with user present → show SnackBar (non-fatal)
-    if (state.error != null && state.user != null) {
-      _showError(state.error!);
+    // Detect upload-done transition: was uploading → now done with no error.
+    if (_wasUploading && !state.isUploading && state.error == null) {
+      _showSuccess('Profile photo updated!');
     }
+    _wasUploading = state.isUploading;
+
+    // Error with user present → show SnackBar (non-fatal).
+    // Guard: only show once per unique error message, and only when
+    // neither an upload nor a save is actively in progress.
+    final err = state.error;
+    if (err != null &&
+        err != _lastHandledError &&
+        !state.isUploading &&
+        !state.isSaving &&
+        state.user != null) {
+      _lastHandledError = err;
+      _showError(err);
+    }
+    // If error cleared, reset our tracker.
+    if (err == null) _lastHandledError = null;
   }
 }
 
@@ -551,6 +614,7 @@ class _AvatarSection extends StatelessWidget {
   final VoidCallback onTap;
 
   const _AvatarSection({
+    super.key,
     required this.user,
     required this.localImage,
     required this.isUploading,

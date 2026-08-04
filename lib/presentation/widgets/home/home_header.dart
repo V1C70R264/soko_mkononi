@@ -1,3 +1,4 @@
+import 'package:e_commerce/core/utils/profile_image_utils.dart';
 import 'package:e_commerce/presentation/data/home_mock_data.dart';
 import 'package:e_commerce/presentation/widgets/home/category_item.dart';
 import 'package:e_commerce/presentation/widgets/home/search_bar_widget.dart';
@@ -7,6 +8,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 class HomeHeader extends StatelessWidget {
   final String userName;
   final String avatarUrl;
+  final int avatarCacheVersion;
   final List<HomeCategoryData> categories;
   final String selectedCategoryId;
   final ValueChanged<String> onCategorySelected;
@@ -18,6 +20,7 @@ class HomeHeader extends StatelessWidget {
     super.key,
     required this.userName,
     required this.avatarUrl,
+    this.avatarCacheVersion = 0,
     required this.categories,
     required this.selectedCategoryId,
     required this.onCategorySelected,
@@ -26,13 +29,25 @@ class HomeHeader extends StatelessWidget {
     this.onFilterTap,
   });
 
+  Widget _buildAvatarWidget(String url) {
+    const fallback = Icon(
+      Icons.person,
+      color: Color(0xFF64748B),
+      size: 26,
+    );
+
+    return ProfileImageUtils.networkImage(
+      url: url,
+      width: 48,
+      height: 48,
+      cacheVersion: avatarCacheVersion,
+      fallback: fallback,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final displayName = userName.trim().isNotEmpty ? userName : 'Guest';
-    final displayAvatar = avatarUrl.isNotEmpty
-        ? avatarUrl
-        : 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80';
-
     final topPadding = MediaQuery.paddingOf(context).top;
 
     return Padding(
@@ -65,17 +80,7 @@ class HomeHeader extends StatelessWidget {
                   ],
                 ),
                 child: ClipOval(
-                  child: Image.network(
-                    displayAvatar,
-                    width: 48,
-                    height: 48,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => const Icon(
-                      Icons.person,
-                      color: Color(0xFF64748B),
-                      size: 26,
-                    ),
-                  ),
+                  child: _buildAvatarWidget(avatarUrl),
                 ),
               ),
               const SizedBox(width: 14),
