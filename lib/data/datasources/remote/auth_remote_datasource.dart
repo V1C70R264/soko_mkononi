@@ -51,6 +51,18 @@ class AuthRemoteDatasource {
     );
   }
 
+  Future<void> signInWithGoogle({required String idToken}) async {
+    final response = await apiClient.dio.post(
+      ApiPaths.googlesignin,
+      data: {
+        'id_token': idToken,
+        'token': idToken,
+      },
+    );
+
+    await _persistTokens(response.data);
+  }
+
   Future<void> logout() async {
     final refreshToken = await tokenStorage.getRefreshToken();
     try {

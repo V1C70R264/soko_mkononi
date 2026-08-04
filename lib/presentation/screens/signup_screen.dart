@@ -2,8 +2,12 @@ import 'package:e_commerce/core/theme/app_theme.dart';
 import 'package:e_commerce/core/utils/result.dart';
 import 'package:e_commerce/domain/usecases/auth/register_user_usecase.dart';
 import 'package:e_commerce/main.dart';
+import 'package:e_commerce/presentation/cubit/auth_cubit.dart';
+import 'package:e_commerce/presentation/cubit/auth_state.dart';
+import 'package:e_commerce/presentation/screens/home_screen.dart';
 import 'package:e_commerce/presentation/widgets/auth_custom_widgets.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -112,6 +116,42 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   @override
   Widget build(BuildContext context) {
+    return BlocListener<AuthCubit, AuthState>(
+      listenWhen: (previous, current) =>
+          current.authSuccess || current.error != null,
+      listener: (context, state) {
+        if (state.authSuccess) {
+          context.read<AuthCubit>().clearAuthSuccess();
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => const HomeScreen()),
+          );
+          return;
+        }
+
+        final error = state.error;
+        if (error != null) {
+          context.read<AuthCubit>().clearError();
+          ScaffoldMessenger.of(context).clearSnackBars();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(error),
+              backgroundColor: Colors.redAccent,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      },
+      child: BlocBuilder<AuthCubit, AuthState>(
+        buildWhen: (previous, current) =>
+            previous.isLoading != current.isLoading,
+        builder: (context, authState) {
+          return _buildScaffold(context, authState.isLoading);
+        },
+      ),
+    );
+  }
+
+  Widget _buildScaffold(BuildContext context, bool isGoogleLoading) {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -290,11 +330,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 const SizedBox(height: 28),
                 // Social Auth
                 SocialAuthRow(
-                  onGoogleTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Google Sign-in coming soon')),
-                    );
-                  },
+                  onGoogleTap: isGoogleLoading || _isLoading
+                      ? null
+                      : () => context.read<AuthCubit>().googleSignIn(),
                 ),
               ],
             ),

@@ -1,13 +1,16 @@
 import 'package:e_commerce/core/network/api_client.dart';
 import 'package:e_commerce/core/storage/token_storage.dart';
 import 'package:e_commerce/data/datasources/remote/auth_remote_datasource.dart';
+import 'package:e_commerce/data/datasources/remote/google_auth_remote_datasource.dart';
 import 'package:e_commerce/data/datasources/remote/user_remote_datasource.dart';
 import 'package:e_commerce/data/repositories/auth_repository_impl.dart';
 import 'package:e_commerce/data/repositories/user_repository.dart';
 import 'package:e_commerce/domain/repositories/auth_repository.dart';
+import 'package:e_commerce/domain/usecases/auth/signin_with_google.dart';
 import 'package:e_commerce/domain/usecases/user/get_user_profile.dart';
 import 'package:e_commerce/domain/usecases/user/update_profile_details.dart';
 import 'package:e_commerce/domain/usecases/user/update_user_profile_image.dart';
+import 'package:e_commerce/presentation/cubit/auth_cubit.dart';
 import 'package:e_commerce/presentation/cubit/profile_cubit.dart';
 import 'package:e_commerce/presentation/screens/home_screen.dart';
 import 'package:e_commerce/presentation/screens/onboarding_screen.dart';
@@ -29,12 +32,16 @@ void main() {
     apiClient: appApiClient,
     tokenStorage: appTokenStorage,
   );
+  final googleAuth = GoogleAuthService(authRemote);
   final userRemote = UserRemoteDatasourceImpl(apiClient: appApiClient);
   appAuthRepository = AuthRepositoryImpl(
     authRemote: authRemote,
+    googleAuth: googleAuth,
     userRemote: userRemote,
     tokenStorage: appTokenStorage,
   );
+
+  final signInWithGoogle = SignInWithGoogle(appAuthRepository);
 
   final userRepository = UserRepositoryImpl(userRemote);
   final getUserProfile = GetUserProfile(userRepository);
@@ -44,6 +51,9 @@ void main() {
   runApp(
     MultiBlocProvider(
       providers: [
+        BlocProvider(
+          create: (_) => AuthCubit(signInWithGoogle),
+        ),
         BlocProvider(
           create: (_) => ProfileCubit(
             getUserProfile,

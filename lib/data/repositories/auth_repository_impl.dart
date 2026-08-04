@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:e_commerce/core/storage/token_storage.dart';
 import 'package:e_commerce/core/utils/result.dart';
 import 'package:e_commerce/data/datasources/remote/auth_remote_datasource.dart';
+import 'package:e_commerce/data/datasources/remote/google_auth_remote_datasource.dart';
 import 'package:e_commerce/data/datasources/remote/user_remote_datasource.dart';
 import 'package:e_commerce/data/models/user_model.dart';
 import 'package:e_commerce/domain/entities/user.dart';
@@ -9,11 +10,13 @@ import 'package:e_commerce/domain/repositories/auth_repository.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
   final AuthRemoteDatasource authRemote;
+  final GoogleAuthService googleAuth;
   final UserRemoteDatasource userRemote;
   final TokenStorage tokenStorage;
 
   AuthRepositoryImpl({
     required this.authRemote,
+    required this.googleAuth,
     required this.userRemote,
     TokenStorage? tokenStorage,
   }) : tokenStorage = tokenStorage ?? TokenStorage();
@@ -59,7 +62,15 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<Result<User>> signInWithGoogle() async {
-    return const Error('Google sign-in is not configured yet');
+    try {
+      await googleAuth.signIn();
+      final user = await _resolveCurrentUser();
+      return Success(user);
+    } on DioException catch (e) {
+      return Error(_messageFromDio(e, fallback: 'Google sign-in failed'));
+    } catch (e) {
+      return Error(e.toString().replaceAll(RegExp(r'^Exception:\s*'), ''));
+    }
   }
 
   @override

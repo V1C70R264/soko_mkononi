@@ -9,6 +9,11 @@ class AppConstants {
   static String get baseUrl => ApiConfig.baseUrl;
   static const int apiTimeout = 30000; // 30 seconds
 
+  // Google OAuth — pass at run/build time:
+  // --dart-define=GOOGLE_WEB_CLIENT_ID=YOUR_WEB_CLIENT_ID.apps.googleusercontent.com
+  // Optional on Android/iOS if configured natively:
+  // --dart-define=GOOGLE_CLIENT_ID=YOUR_PLATFORM_CLIENT_ID.apps.googleusercontent.com
+
   // Shared Preferences Keys
   static const String languageKey = 'selected_language';
   static const String userTokenKey = 'user_token';
