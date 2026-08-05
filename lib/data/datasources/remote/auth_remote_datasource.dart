@@ -52,16 +52,23 @@ class AuthRemoteDatasource {
   }
 
   Future<void> signInWithGoogle({required String idToken}) async {
-    final response = await apiClient.dio.post(
-      ApiPaths.googlesignin,
-      data: {
-        'id_token': idToken,
-        'token': idToken,
-      },
-    );
+  // TEMP DEBUG — remove after diagnosing
+  print('=== SIGN-IN WITH GOOGLE REQUEST ===');
+  print('baseUrl: ${apiClient.dio.options.baseUrl}');
+  print('path: ${ApiPaths.googlesignin}');
+  print('full url guess: ${apiClient.dio.options.baseUrl}${ApiPaths.googlesignin}');
+  print('=== END SIGN-IN WITH GOOGLE REQUEST ===');
 
-    await _persistTokens(response.data);
-  }
+  final response = await apiClient.dio.post(
+    ApiPaths.googlesignin,
+    data: {
+      'id_token': idToken,
+      'token': idToken,
+    },
+  );
+
+  await _persistTokens(response.data);
+}
 
   Future<void> logout() async {
     final refreshToken = await tokenStorage.getRefreshToken();
