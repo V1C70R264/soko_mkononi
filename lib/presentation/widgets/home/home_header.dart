@@ -3,15 +3,16 @@ import 'package:e_commerce/presentation/data/home_mock_data.dart';
 import 'package:e_commerce/presentation/widgets/home/category_item.dart';
 import 'package:e_commerce/presentation/widgets/home/search_bar_widget.dart';
 import 'package:flutter/material.dart';
+import 'package:e_commerce/domain/entities/category_entity.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class HomeHeader extends StatelessWidget {
   final String userName;
   final String avatarUrl;
   final int avatarCacheVersion;
-  final List<HomeCategoryData> categories;
-  final String selectedCategoryId;
-  final ValueChanged<String> onCategorySelected;
+  final List<CategoryEntity> categories;
+  final int selectedCategoryId;
+  final ValueChanged<int> onCategorySelected;
   final VoidCallback? onNotificationTap;
   final VoidCallback? onSearchTap;
   final VoidCallback? onFilterTap;
@@ -60,11 +61,9 @@ class HomeHeader extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Top User Row & Notification Bell
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Avatar
               Container(
                 width: 48,
                 height: 48,
@@ -84,8 +83,6 @@ class HomeHeader extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 14),
-
-              // Greeting & User Name (Retrieved dynamically from backend)
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -114,8 +111,6 @@ class HomeHeader extends StatelessWidget {
                   ],
                 ),
               ),
-
-              // Circular Notification Bell with Indicator Dot
               Container(
                 width: 46,
                 height: 46,
@@ -144,7 +139,6 @@ class HomeHeader extends StatelessWidget {
                           color: Color(0xFF0F172A),
                           size: 19,
                         ),
-                        // Badge Indicator Dot
                         Positioned(
                           top: 10,
                           right: 11,
@@ -165,15 +159,11 @@ class HomeHeader extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 20),
-
-          // Search & Filter Row
           SearchBarWidget(
             onTap: onSearchTap,
             onFilterTap: onFilterTap,
           ),
           const SizedBox(height: 24),
-
-          // Categories Title Heading
           const Text(
             'Categories',
             style: TextStyle(
@@ -184,8 +174,6 @@ class HomeHeader extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 14),
-
-          // Horizontal Category Chips List
           SizedBox(
             height: 46,
             child: ListView.separated(

@@ -1,8 +1,8 @@
-import 'package:e_commerce/presentation/data/home_mock_data.dart';
+import 'package:e_commerce/domain/entities/category_entity.dart';
 import 'package:flutter/material.dart';
 
 class CategoryItem extends StatelessWidget {
-  final HomeCategoryData category;
+  final CategoryEntity category;
   final bool isSelected;
   final VoidCallback? onTap;
 
@@ -13,21 +13,9 @@ class CategoryItem extends StatelessWidget {
     this.onTap,
   });
 
-  Color _getIconColor(String id) {
-    return switch (id) {
-      'fruits' => const Color(0xFFEF4444),
-      'vegetables' => const Color(0xFF10B981),
-      'fish' => const Color(0xFFF97316),
-      'bread' => const Color(0xFFEAB308),
-      'coffee' => const Color(0xFF8B5CF6),
-      _ => const Color(0xFF26AD71),
-    };
-  }
-
   @override
   Widget build(BuildContext context) {
     final primaryColor = const Color(0xFF26AD71);
-    final iconColor = isSelected ? Colors.white : _getIconColor(category.id);
 
     return GestureDetector(
       onTap: onTap,
@@ -60,42 +48,13 @@ class CategoryItem extends StatelessWidget {
                   ),
                 ],
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            if (category.icon != null) ...[
-              Icon(
-                category.icon,
-                color: iconColor,
-                size: 18,
-              ),
-              const SizedBox(width: 8),
-            ] else if (category.imageUrl != null) ...[
-              ClipOval(
-                child: Image.network(
-                  category.imageUrl!,
-                  width: 20,
-                  height: 20,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Icon(
-                    Icons.category,
-                    color: iconColor,
-                    size: 18,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-            ],
-            Text(
-              category.label,
-              style: TextStyle(
-                color: isSelected ? Colors.white : const Color(0xFF475569),
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                fontSize: 13,
-              ),
-            ),
-          ],
+        child: Text(
+          category.name,
+          style: TextStyle(
+            color: isSelected ? Colors.white : const Color(0xFF475569),
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+            fontSize: 13,
+          ),
         ),
       ),
     );

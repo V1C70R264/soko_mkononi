@@ -1,27 +1,38 @@
-import 'package:e_commerce/presentation/data/home_mock_data.dart';
 import 'package:flutter/material.dart';
 
+/// A purely presentational product card. It knows nothing about entities,
+/// BLoCs or layout width: the screen decides all of that.
 class ProductCard extends StatelessWidget {
-  final HomeProductItem product;
+  final String imageUrl;
+  final String name;
+  final double price;
+  final String? subtitle;
+  final bool isFavorited;
   final VoidCallback? onTap;
   final VoidCallback? onAddTap;
+  final VoidCallback? onFavoriteTap;
 
   const ProductCard({
     super.key,
-    required this.product,
+    required this.imageUrl,
+    required this.name,
+    required this.price,
+    this.subtitle,
+    this.isFavorited = false,
     this.onTap,
     this.onAddTap,
+    this.onFavoriteTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final hasSubtitle = subtitle != null && subtitle!.trim().isNotEmpty;
 
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: HomeLayout.productCardWidth,
         decoration: BoxDecoration(
           color: scheme.surfaceContainerHigh,
           borderRadius: BorderRadius.circular(18),
@@ -45,7 +56,7 @@ class ProductCard extends StatelessWidget {
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(12),
                         child: Image.network(
-                          product.imageUrl,
+                          imageUrl,
                           width: double.infinity,
                           fit: BoxFit.cover,
                           errorBuilder: (_, __, ___) => Icon(
@@ -56,6 +67,30 @@ class ProductCard extends StatelessWidget {
                       ),
                     ),
                   ),
+                  // Heart (favorites)
+                  Positioned(
+                    top: 18,
+                    right: 18,
+                    child: Material(
+                      color: scheme.surface.withValues(alpha: 0.9),
+                      shape: const CircleBorder(),
+                      child: InkWell(
+                        onTap: onFavoriteTap,
+                        customBorder: const CircleBorder(),
+                        child: SizedBox(
+                          width: 32,
+                          height: 32,
+                          child: Icon(
+                            isFavorited ? Icons.favorite : Icons.favorite_border,
+                            size: 20,
+                            color:
+                                isFavorited ? Colors.red : scheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Add to cart
                   Positioned(
                     right: 10,
                     bottom: 4,
@@ -86,7 +121,7 @@ class ProductCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    product.title,
+                    name,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.titleSmall?.copyWith(
@@ -94,19 +129,23 @@ class ProductCard extends StatelessWidget {
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    product.description,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: scheme.onSurfaceVariant,
-                      fontSize: 11,
+                  if (hasSubtitle) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: scheme.onSurfaceVariant,
+                        fontSize: 11,
+                      ),
                     ),
-                  ),
+                  ],
                   const SizedBox(height: 6),
                   Text(
-                    '\$${product.price.toStringAsFixed(2)}/${product.unit}',
+                    'TZS ${price.toStringAsFixed(0)}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.titleSmall?.copyWith(
                       color: scheme.onSurface,
                       fontWeight: FontWeight.w800,

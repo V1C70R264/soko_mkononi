@@ -1,10 +1,18 @@
-import 'package:e_commerce/presentation/data/cart_mock_data.dart';
+import 'package:e_commerce/domain/entities/cart_item_entity.dart';
 import 'package:e_commerce/presentation/widgets/cart/quantity_selector.dart';
 import 'package:flutter/material.dart';
 
+/// Layout tokens for the cart screen.
+abstract final class CartLayout {
+  static const double horizontalPadding = 20;
+  static const double cardRadius = 20;
+  static const double itemImageSize = 88;
+  static const double promoFieldHeight = 56;
+  static const double checkoutButtonHeight = 56;
+}
+
 class CartItemCard extends StatelessWidget {
-  final CartLineItem item;
-  final int quantity;
+  final CartItemEntity item;
   final VoidCallback? onDelete;
   final VoidCallback? onDecrement;
   final VoidCallback? onIncrement;
@@ -12,7 +20,6 @@ class CartItemCard extends StatelessWidget {
   const CartItemCard({
     super.key,
     required this.item,
-    required this.quantity,
     this.onDelete,
     this.onDecrement,
     this.onIncrement,
@@ -42,7 +49,7 @@ class CartItemCard extends StatelessWidget {
           ClipRRect(
             borderRadius: BorderRadius.circular(14),
             child: Image.network(
-              item.imageUrl,
+              item.productImageUrl,
               width: CartLayout.itemImageSize,
               height: CartLayout.itemImageSize,
               fit: BoxFit.cover,
@@ -67,7 +74,7 @@ class CartItemCard extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        item.title,
+                        item.productName,
                         style: theme.textTheme.titleSmall?.copyWith(
                           color: scheme.onSurface,
                           fontWeight: FontWeight.w700,
@@ -90,7 +97,7 @@ class CartItemCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  item.subtitle,
+                  'TZS ${item.productPrice.toStringAsFixed(0)} each',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: scheme.onSurfaceVariant,
                   ),
@@ -101,14 +108,14 @@ class CartItemCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Text(
-                      '\$${item.price.toStringAsFixed(0)}',
+                      'TZS ${item.totalPrice.toStringAsFixed(0)}',
                       style: theme.textTheme.titleMedium?.copyWith(
                         color: scheme.onSurface,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
                     QuantitySelector(
-                      quantity: quantity,
+                      quantity: item.quantity,
                       onDecrement: onDecrement,
                       onIncrement: onIncrement,
                     ),

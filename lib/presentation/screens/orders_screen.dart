@@ -1,9 +1,14 @@
+import 'package:e_commerce/domain/entities/order_entity.dart';
+import 'package:e_commerce/presentation/bloc/orders/orders_bloc.dart';
+import 'package:e_commerce/presentation/bloc/orders/orders_event.dart';
+import 'package:e_commerce/presentation/bloc/orders/orders_state.dart';
 import 'package:e_commerce/presentation/data/orders_mock_data.dart';
 import 'package:e_commerce/presentation/screens/order_tracking_screen.dart';
 import 'package:e_commerce/presentation/widgets/orders/order_card.dart';
 import 'package:e_commerce/presentation/widgets/orders/orders_header.dart';
 import 'package:e_commerce/presentation/widgets/orders/orders_tab_bar.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class OrdersScreen extends StatefulWidget {
   /// When `true`, hides the back button (e.g. embedded in bottom nav).
@@ -23,6 +28,7 @@ class _OrdersScreenState extends State<OrdersScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    context.read<OrdersBloc>().add(LoadOrders());
   }
 
   @override
@@ -31,8 +37,7 @@ class _OrdersScreenState extends State<OrdersScreen>
     super.dispose();
   }
 
-  bool get _showBack =>
-      !widget.embedded && Navigator.canPop(context);
+  bool get _showBack => !widget.embedded && Navigator.canPop(context);
 
   @override
   Widget build(BuildContext context) {
@@ -46,12 +51,37 @@ class _OrdersScreenState extends State<OrdersScreen>
             OrdersHeader(showBackButton: _showBack),
             OrdersTabBar(controller: _tabController),
             Expanded(
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                  _OrderList(orders: inProgressOrders),
-                  _OrderList(orders: completedOrders),
-                ],
+              child: BlocBuilder<OrdersBloc, OrdersState>(
+                builder: (context, state) {
+                  if (state is OrdersLoading || state is OrdersInitial) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (state is OrdersError) {
+                    return Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(state.message),
+                          TextButton(
+                            onPressed: () =>
+                                context.read<OrdersBloc>().add(LoadOrders()),
+                            child: const Text('Retry'),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  final loaded = state as OrdersLoaded;
+
+                  return TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _OrderList(orders: loaded.inProgress),
+                      _OrderList(orders: loaded.completed),
+                    ],
+                  );
+                },
               ),
             ),
           ],
@@ -62,7 +92,7 @@ class _OrdersScreenState extends State<OrdersScreen>
 }
 
 class _OrderList extends StatelessWidget {
-  final List<OrderItemData> orders;
+  final List<OrderEntity> orders;
 
   const _OrderList({required this.orders});
 
@@ -89,13 +119,14 @@ class _OrderList extends StatelessWidget {
       itemCount: orders.length,
       separatorBuilder: (_, __) => const SizedBox(height: 14),
       itemBuilder: (context, index) {
+        final order = orders[index];
         return OrderCard(
-          order: orders[index],
+          order: order,
           onTrack: () {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => OrderTrackingScreen(order: orders[index]),
+                builder: (context) => OrderTrackingScreen(order: order),
               ),
             );
           },

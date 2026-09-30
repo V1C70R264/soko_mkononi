@@ -15,6 +15,7 @@ import 'package:e_commerce/presentation/widgets/auth_custom_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:e_commerce/presentation/screens/addresses_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -215,7 +216,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       icon: Icons.location_on_outlined,
                       title: 'Shipping Addresses',
                       subtitle: 'Manage delivery addresses',
-                      onTap: () => _showFeatureSnackBar('Shipping addresses feature'),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const AddressesScreen()),
+                      ),
                     ),
                     _buildDivider(),
                     _buildSettingsTile(

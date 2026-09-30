@@ -1,33 +1,41 @@
+// 
+
 import 'package:e_commerce/core/theme/app_theme.dart';
-import 'package:e_commerce/presentation/data/orders_mock_data.dart';
+import 'package:e_commerce/domain/entities/order_entity.dart';
+import 'package:e_commerce/domain/entities/order_item_entity.dart';
+import 'package:e_commerce/presentation/bloc/orders/orders_bloc.dart';
+import 'package:e_commerce/presentation/bloc/orders/orders_event.dart';
+import 'package:e_commerce/presentation/widgets/orders/order_card.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class OrderTrackingScreen extends StatelessWidget {
-  final OrderItemData? order;
+  final OrderEntity order;
 
-  const OrderTrackingScreen({
-    super.key,
-    this.order,
-  });
+  const OrderTrackingScreen({super.key, required this.order});
+
+  static const _timeline = [
+    'pending',
+    'confirmed',
+    'processing',
+    'shipped',
+    'out_for_delivery',
+    'delivered',
+  ];
+
+  static const _timelineLabels = [
+    'Order Placed',
+    'Confirmed',
+    'Processing',
+    'Shipped Out',
+    'Out for Delivery',
+    'Delivered',
+  ];
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    final trackedOrders = (inProgressOrders.isNotEmpty)
-        ? inProgressOrders
-        : [
-            order ??
-                const OrderItemData(
-                  id: '1',
-                  transactionId: 'X78C349K',
-                  scheduledDate: '22/09/2023',
-                  status: 'Out For Delivery',
-                  price: 265.00,
-                  imageUrl:
-                      'https://images.unsplash.com/photo-1604503468506-a8da358d5240?w=300&q=80',
-                ),
-          ];
+    final currentIndex = _timeline.indexOf(order.status);
+    final canCancel = order.status == 'pending' || order.status == 'confirmed';
 
     return Scaffold(
       backgroundColor: const Color(0xFFF3F5F7),
@@ -74,58 +82,75 @@ class OrderTrackingScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: const BoxDecoration(
-                      color: AppTheme.primaryGreen,
-                      shape: BoxShape.circle,
-                    ),
-                    child: IconButton(
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Calling Abdul Rahman...'),
-                            duration: Duration(seconds: 2),
-                          ),
-                        );
-                      },
-                      icon: const Icon(
-                        Icons.phone_rounded,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                    ),
-                  ),
+                  const SizedBox(width: 42), // balances the back button
                 ],
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 4),
 
-            // Scrollable Body (Timeline + Order Items)
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    const SizedBox(height: 8),
+                    // Rider row — placeholder until the backend has a
+                    // courier/delivery-assignment field to read from.
+                    if (order.status != 'cancelled') _RiderRow(order: order),
+                    const SizedBox(height: 24),
+                    if (order.status == 'cancelled')
+                      const _CancelledBanner()
+                    else
+                      _TrackingTimeline(
+                        currentIndex: currentIndex,
+                        orderCreatedAt: order.createdAt,
+                      ),
+                    const SizedBox(height: 24),
+                    Text(
+                      'Order #${order.orderNumber}',
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.black87,
+                      ),
+                    ),
                     const SizedBox(height: 12),
-                    // Timeline Section
-                    const _TrackingTimeline(),
-
-                    const SizedBox(height: 28),
-
-                    // Order Items Section
                     ListView.separated(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
-                      itemCount: trackedOrders.length,
+                      itemCount: order.items.length,
                       separatorBuilder: (_, __) => const SizedBox(height: 16),
                       itemBuilder: (context, index) {
-                        return _TrackingItemCard(order: trackedOrders[index]);
+                        return _TrackingItemCard(
+                          item: order.items[index],
+                          order: order,
+                        );
                       },
                     ),
-
+                    if (canCancel) ...[
+                      const SizedBox(height: 24),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton(
+                          onPressed: () {
+                            context
+                                .read<OrdersBloc>()
+                                .add(CancelOrderEvent(order.id));
+                            Navigator.pop(context);
+                          },
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.red,
+                            side: const BorderSide(color: Colors.red),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                          child: const Text('Cancel Order'),
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 28),
                   ],
                 ),
@@ -138,61 +163,169 @@ class OrderTrackingScreen extends StatelessWidget {
   }
 }
 
-/// Vertical timeline component representing order progress
-class _TrackingTimeline extends StatelessWidget {
-  const _TrackingTimeline();
+/// Placeholder rider info until the backend has a real courier/delivery
+/// assignment field. Shows a generic icon rather than inventing a name
+/// or photo for someone who doesn't exist in the data.
+class _RiderRow extends StatelessWidget {
+  final OrderEntity order;
+  const _RiderRow({required this.order});
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    final assigned = order.status == 'shipped' ||
+        order.status == 'out_for_delivery' ||
+        order.status == 'delivered';
+
+    return Row(
       children: [
-        // Step 1: Delivery Personnel
-        _TimelineTile(
-          isFirst: true,
-          leading: const CircleAvatar(
-            radius: 20,
-            backgroundImage: NetworkImage(
-              'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&q=80',
+        Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            color: AppTheme.primaryGreen.withValues(alpha: 0.12),
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(
+            Icons.delivery_dining_rounded,
+            color: AppTheme.primaryGreen,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Delivery Rider',
+                style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                assigned ? 'On the way to you' : 'Assigned once shipped',
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.black87,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Container(
+          width: 44,
+          height: 44,
+          decoration: const BoxDecoration(
+            color: AppTheme.primaryGreen,
+            shape: BoxShape.circle,
+          ),
+          child: IconButton(
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Connecting you to support...'),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            },
+            icon: const Icon(
+              Icons.headset_mic_rounded,
+              color: Colors.white,
+              size: 20,
             ),
           ),
-          subtitle: 'Delivery Personnel',
-          title: 'Abdul Rahman',
-        ),
-
-        // Step 2: Order Processed
-        const _TimelineTile(
-          leading: _StatusIndicator(status: _StatusState.completed),
-          subtitle: 'Order Processed',
-          title: '22nd September 2023',
-        ),
-
-        // Step 3: Shipped Out
-        const _TimelineTile(
-          leading: _StatusIndicator(status: _StatusState.completed),
-          subtitle: 'Shipped Out',
-          title: '23rd September 2023',
-        ),
-
-        // Step 4: Out for Delivery
-        const _TimelineTile(
-          leading: _StatusIndicator(status: _StatusState.inProgress),
-          subtitle: 'Out for Delivery',
-          title: '24th September 2023',
-        ),
-
-        // Step 5: Delivered
-        const _TimelineTile(
-          isLast: true,
-          leading: _StatusIndicator(status: _StatusState.pending),
-          subtitle: 'Delivered',
-          title: '25th September 2023',
         ),
       ],
     );
   }
 }
 
+class _CancelledBanner extends StatelessWidget {
+  const _CancelledBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.red.shade50,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.red.shade200),
+      ),
+      child: const Row(
+        children: [
+          Icon(Icons.cancel_outlined, color: Colors.red),
+          SizedBox(width: 10),
+          Text(
+            'This order was cancelled',
+            style: TextStyle(color: Colors.red, fontWeight: FontWeight.w700),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Dashed vertical timeline. Only the very first step has a real
+/// timestamp on the backend (order.createdAt); the middle steps have
+/// no per-transition timestamps, so they show status only, honestly,
+/// rather than inventing dates the backend doesn't track.
+class _TrackingTimeline extends StatelessWidget {
+  final int currentIndex;
+  final DateTime orderCreatedAt;
+
+  const _TrackingTimeline({
+    required this.currentIndex,
+    required this.orderCreatedAt,
+  });
+
+  String _formatDate(DateTime date) {
+    return '${date.day.toString().padLeft(2, '0')}/'
+        '${date.month.toString().padLeft(2, '0')}/${date.year}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: List.generate(
+        OrderTrackingScreen._timelineLabels.length,
+        (index) {
+          final _StatusState state;
+          if (index < currentIndex) {
+            state = _StatusState.completed;
+          } else if (index == currentIndex) {
+            state = _StatusState.inProgress;
+          } else {
+            state = _StatusState.pending;
+          }
+
+          return _TimelineTile(
+            isFirst: index == 0,
+            isLast: index == OrderTrackingScreen._timelineLabels.length - 1,
+            leading: _StatusIndicator(status: state),
+            subtitle: index == 0 ? _formatDate(orderCreatedAt) : state.name,
+            title: OrderTrackingScreen._timelineLabels[index],
+          );
+        },
+      ),
+    );
+  }
+}
+
 enum _StatusState { completed, inProgress, pending }
+
+extension on _StatusState {
+  String get name {
+    switch (this) {
+      case _StatusState.completed:
+        return 'Completed';
+      case _StatusState.inProgress:
+        return 'In progress';
+      case _StatusState.pending:
+        return 'Pending';
+    }
+  }
+}
 
 class _StatusIndicator extends StatelessWidget {
   final _StatusState status;
@@ -226,15 +359,15 @@ class _StatusIndicator extends StatelessWidget {
           width: 22,
           height: 22,
           decoration: BoxDecoration(
-            color: Colors.grey.shade300,
+            color: AppTheme.primaryGreen.withValues(alpha: 0.2),
             shape: BoxShape.circle,
           ),
           child: Center(
             child: Container(
               width: 9,
               height: 9,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade700,
+              decoration: const BoxDecoration(
+                color: AppTheme.primaryGreen,
                 shape: BoxShape.circle,
               ),
             ),
@@ -308,20 +441,20 @@ class _TimelineTile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    subtitle,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
                     title,
                     style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
                       color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey.shade600,
                     ),
                   ),
                 ],
@@ -365,9 +498,10 @@ class DashedLinePainter extends CustomPainter {
 }
 
 class _TrackingItemCard extends StatelessWidget {
-  final OrderItemData order;
+  final OrderItemEntity item;
+  final OrderEntity order;
 
-  const _TrackingItemCard({required this.order});
+  const _TrackingItemCard({required this.item, required this.order});
 
   @override
   Widget build(BuildContext context) {
@@ -390,7 +524,7 @@ class _TrackingItemCard extends StatelessWidget {
           ClipRRect(
             borderRadius: BorderRadius.circular(16),
             child: Image.network(
-              order.imageUrl,
+              item.productImageUrl,
               width: 76,
               height: 76,
               fit: BoxFit.cover,
@@ -408,7 +542,9 @@ class _TrackingItemCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Transaction ID: ${order.transactionId}',
+                  item.productName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
@@ -417,56 +553,36 @@ class _TrackingItemCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  'Scheduled For: ${order.scheduledDate}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade600,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  order.status,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.grey.shade800,
-                  ),
+                  'Qty: ${item.quantity}',
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                 ),
                 const SizedBox(height: 4),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      '\$${order.price.toStringAsFixed(2)}',
+                      'TZS ${item.subtotal.toStringAsFixed(0)}',
                       style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w800,
                         color: Colors.black87,
                       ),
                     ),
-                    Material(
-                      color: AppTheme.primaryGreen,
-                      borderRadius: BorderRadius.circular(20),
-                      child: InkWell(
-                        onTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Order ${order.transactionId} Summary'),
-                              duration: const Duration(seconds: 2),
-                            ),
-                          );
-                        },
+                    Container(
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryGreen,
                         borderRadius: BorderRadius.circular(20),
-                        child: const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          child: Text(
-                            'Summary',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 6,
+                      ),
+                      child: Text(
+                        orderStatusLabel(order.status),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),

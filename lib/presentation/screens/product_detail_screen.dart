@@ -1,4 +1,10 @@
-import 'package:e_commerce/data/models/product_model.dart';
+import 'package:e_commerce/domain/entities/product_entity.dart';
+import 'package:e_commerce/main.dart';
+import 'package:e_commerce/presentation/bloc/cart/cart_bloc.dart';
+import 'package:e_commerce/presentation/bloc/cart/cart_event.dart';
+import 'package:e_commerce/presentation/bloc/favorites/favorites_bloc.dart';
+import 'package:e_commerce/presentation/bloc/favorites/favorites_event.dart';
+import 'package:e_commerce/presentation/bloc/favorites/favorites_state.dart';
 import 'package:e_commerce/presentation/data/home_mock_data.dart';
 import 'package:e_commerce/presentation/data/product_detail_mock_data.dart';
 import 'package:e_commerce/presentation/widgets/home/product_card.dart';
@@ -6,9 +12,10 @@ import 'package:e_commerce/presentation/widgets/product_detail/product_detail_im
 import 'package:e_commerce/presentation/widgets/product_detail/product_detail_meta_row.dart';
 import 'package:e_commerce/presentation/widgets/product_detail/product_detail_tab_bar.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class ProductDetailScreen extends StatefulWidget {
-  final Product? product;
+  final ProductEntity? product;
 
   const ProductDetailScreen({super.key, this.product});
 
@@ -17,11 +24,46 @@ class ProductDetailScreen extends StatefulWidget {
 }
 
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
+  List<ProductEntity> _relatedProducts = [];
+  bool _relatedLoading = true;
+  String? _relatedError;
   int _selectedTab = 0;
 
+  @override
+  void initState() {
+    super.initState();
+    _loadRelatedProducts();
+  }
+
+  Future<void> _loadRelatedProducts() async {
+    final product = widget.product;
+    if (product == null) {
+      setState(() => _relatedLoading = false);
+      return;
+    }
+
+    final result = await appGetProductsByCategory(product.categoryId);
+
+    result.fold(
+      (products) {
+        setState(() {
+          _relatedProducts =
+              products.where((p) => p.id != product.id).toList();
+          _relatedLoading = false;
+        });
+      },
+      (errorMessage) {
+        setState(() {
+          _relatedError = errorMessage;
+          _relatedLoading = false;
+        });
+      },
+    );
+  }
+
   String get _title =>
-      widget.product?.title.isNotEmpty == true
-          ? widget.product!.title
+      widget.product?.name.isNotEmpty == true
+          ? widget.product!.name
           : kDefaultProductTitle;
 
   String get _imageUrl =>
@@ -100,66 +142,105 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       const SizedBox(height: 20),
                       Divider(color: scheme.outlineVariant, height: 1),
                       const SizedBox(height: 20),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'You Might Also Like',
-                            style: theme.textTheme.titleLarge?.copyWith(
-                              color: scheme.onSurface,
-                              fontWeight: FontWeight.w800,
+                      if (_relatedLoading)
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 24),
+                          child: Center(child: CircularProgressIndicator()),
+                        )
+                      else if (_relatedError != null)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 24),
+                          child: Text(
+                            'Could not load related products: $_relatedError',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: scheme.error,
                             ),
                           ),
-                          TextButton(
-                            onPressed: () {},
-                            style: TextButton.styleFrom(
-                              foregroundColor: scheme.onSurfaceVariant,
-                              padding: EdgeInsets.zero,
-                              minimumSize: Size.zero,
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            ),
-                            child: Text(
-                              'View All',
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: scheme.onSurfaceVariant,
+                        )
+                      else if (_relatedProducts.isNotEmpty) ...[
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'You Might Also Like',
+                              style: theme.textTheme.titleLarge?.copyWith(
+                                color: scheme.onSurface,
+                                fontWeight: FontWeight.w800,
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 14),
-                      SizedBox(
-                        height: HomeLayout.productCardHeight,
-                        child: ListView.separated(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: relatedProducts.length,
-                          separatorBuilder: (_, __) =>
-                              const SizedBox(width: 14),
-                          itemBuilder: (context, index) {
-                            final item = relatedProducts[index];
-                            return ProductCard(
-                              product: item,
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => ProductDetailScreen(
-                                      product: Product(
-                                        id: item.id,
-                                        title: item.title,
-                                        description: item.description,
-                                        imageUrl: item.imageUrl,
-                                        price: item.price,
-                                        category: ProductCategory.other,
-                                      ),
+                            TextButton(
+                              onPressed: () {},
+                              style: TextButton.styleFrom(
+                                foregroundColor: scheme.onSurfaceVariant,
+                                padding: EdgeInsets.zero,
+                                minimumSize: Size.zero,
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                              child: Text(
+                                'View All',
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: scheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+                        BlocBuilder<FavoritesBloc, FavoritesState>(
+                          builder: (context, favState) {
+                            final favoriteIds = favState is FavoritesLoaded
+                                ? favState.favoriteIds
+                                : <int>{};
+
+                            return SizedBox(
+                              height: HomeLayout.productCardHeight,
+                              child: ListView.separated(
+                                scrollDirection: Axis.horizontal,
+                                itemCount: _relatedProducts.length,
+                                separatorBuilder: (_, __) =>
+                                    const SizedBox(width: 14),
+                                itemBuilder: (context, index) {
+                                  final item = _relatedProducts[index];
+                                  return SizedBox(
+                                    width: HomeLayout.productCardWidth,
+                                    child: ProductCard(
+                                      imageUrl: item.imageUrl,
+                                      name: item.name,
+                                      price: item.price,
+                                      subtitle: item.description,
+                                      isFavorited:
+                                          favoriteIds.contains(item.id),
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) =>
+                                                ProductDetailScreen(
+                                                    product: item),
+                                          ),
+                                        );
+                                      },
+                                      onAddTap: () {
+                                        context.read<CartBloc>().add(
+                                          AddToCartEvent(
+                                            productId: item.id,
+                                            quantity: 1,
+                                          ),
+                                        );
+                                      },
+                                      onFavoriteTap: () {
+                                        context.read<FavoritesBloc>().add(
+                                          ToggleFavoriteEvent(item.id),
+                                        );
+                                      },
                                     ),
-                                  ),
-                                );
-                              },
+                                  );
+                                },
+                              ),
                             );
                           },
                         ),
-                      ),
+                      ],
                     ],
                   ),
                 ),
