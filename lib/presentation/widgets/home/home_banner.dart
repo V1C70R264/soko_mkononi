@@ -1,29 +1,48 @@
+// lib/presentation/widgets/home/home_banner.dart
 import 'package:e_commerce/presentation/data/home_mock_data.dart';
 import 'package:flutter/material.dart';
 
 class HomeBanner extends StatelessWidget {
-  final HomeOfferData offer;
+  final String title;
+  final String subtitle;
+  final String ctaLabel;
+  final String imageUrl;
+  final Color backgroundColor;
   final VoidCallback? onShopTap;
 
   const HomeBanner({
     super.key,
-    required this.offer,
+    required this.title,
+    required this.subtitle,
+    required this.ctaLabel,
+    required this.imageUrl,
+    required this.backgroundColor,
     this.onShopTap,
   });
+
+  /// Parses a hex string like "#F5E6C8" into a Color, falling back to a
+  /// neutral tone if the backend ever sends something malformed.
+  static Color colorFromHex(String hex) {
+    final cleaned = hex.replaceFirst('#', '');
+    final value = int.tryParse('FF$cleaned', radix: 16);
+    return value != null ? Color(value) : const Color(0xFFF5E6C8);
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
 
     return Container(
       height: HomeLayout.bannerHeight,
       decoration: BoxDecoration(
-        color: scheme.surfaceContainerHigh,
+        // The whole card takes the promotion's own background color, so
+        // the image's backdrop blends into the card with no visible seam
+        // — this is set per-promotion in Django, not hardcoded here.
+        color: backgroundColor,
         borderRadius: BorderRadius.circular(HomeLayout.bannerRadius),
         boxShadow: [
           BoxShadow(
-            color: scheme.shadow.withValues(alpha: 0.06),
+            color: Colors.black.withValues(alpha: 0.06),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -41,24 +60,24 @@ class HomeBanner extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    offer.discount,
+                    title,
                     style: theme.textTheme.titleLarge?.copyWith(
-                      color: scheme.onSurface,
+                      color: Colors.black87,
                       fontWeight: FontWeight.w800,
                       height: 1.1,
                     ),
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    offer.subtitle,
+                    subtitle,
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: scheme.onSurface,
+                      color: Colors.black87,
                       height: 1.35,
                     ),
                   ),
                   const SizedBox(height: 12),
                   Material(
-                    color: scheme.primary,
+                    color: theme.colorScheme.primary,
                     borderRadius: BorderRadius.circular(22),
                     child: InkWell(
                       onTap: onShopTap,
@@ -69,9 +88,9 @@ class HomeBanner extends StatelessWidget {
                           vertical: 9,
                         ),
                         child: Text(
-                          offer.ctaLabel,
+                          ctaLabel,
                           style: theme.textTheme.labelLarge?.copyWith(
-                            color: scheme.onPrimary,
+                            color: theme.colorScheme.onPrimary,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -85,8 +104,12 @@ class HomeBanner extends StatelessWidget {
           Expanded(
             flex: 5,
             child: Image.network(
-              offer.imageUrl,
-              fit: BoxFit.cover,
+              imageUrl,
+              // BoxFit.contain (not cover) so the image's own edges —
+              // which carry its matching backdrop color — stay visible
+              // rather than being cropped, keeping the seamless look
+              // even if the uploaded photo's aspect ratio varies.
+              fit: BoxFit.contain,
               height: HomeLayout.bannerHeight,
               errorBuilder: (_, __, ___) => const SizedBox.shrink(),
             ),

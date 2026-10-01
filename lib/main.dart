@@ -8,6 +8,7 @@ import 'package:e_commerce/data/datasources/remote/favorites_remote_datasource.d
 import 'package:e_commerce/data/datasources/remote/google_auth_remote_datasource.dart';
 import 'package:e_commerce/data/datasources/remote/home_remote_datasource.dart';
 import 'package:e_commerce/data/datasources/remote/order_remote_datasource.dart';
+import 'package:e_commerce/data/datasources/remote/promotion_remote_datasource.dart';
 import 'package:e_commerce/data/datasources/remote/user_remote_datasource.dart';
 import 'package:e_commerce/data/repositories/address_repository_impl.dart';
 import 'package:e_commerce/data/repositories/auth_repository_impl.dart';
@@ -15,6 +16,7 @@ import 'package:e_commerce/data/repositories/cart_repository_impl.dart';
 import 'package:e_commerce/data/repositories/favorites_repository_impl.dart';
 import 'package:e_commerce/data/repositories/home_repository_impl.dart';
 import 'package:e_commerce/data/repositories/order_repository_impl.dart';
+import 'package:e_commerce/data/repositories/promotion_repository_impl.dart';
 import 'package:e_commerce/data/repositories/user_repository.dart';
 import 'package:e_commerce/domain/repositories/auth_repository.dart';
 import 'package:e_commerce/domain/usecases/add_to_cart.dart';
@@ -23,6 +25,7 @@ import 'package:e_commerce/domain/usecases/cancel_order.dart';
 import 'package:e_commerce/domain/usecases/clear_cart.dart';
 import 'package:e_commerce/domain/usecases/create_address.dart';
 import 'package:e_commerce/domain/usecases/create_order.dart';
+import 'package:e_commerce/domain/usecases/get_active_promotions.dart';
 import 'package:e_commerce/domain/usecases/get_addresses.dart';
 import 'package:e_commerce/domain/usecases/get_cart.dart';
 import 'package:e_commerce/domain/usecases/get_categories.dart';
@@ -43,6 +46,7 @@ import 'package:e_commerce/presentation/bloc/checkout/checkout_bloc.dart';
 import 'package:e_commerce/presentation/bloc/favorites/favorites_bloc.dart';
 import 'package:e_commerce/presentation/bloc/home_bloc.dart';
 import 'package:e_commerce/presentation/bloc/orders/orders_bloc.dart';
+import 'package:e_commerce/presentation/bloc/promotions/promotions_bloc.dart';
 import 'package:e_commerce/presentation/bloc/search/search_bloc.dart';
 import 'package:e_commerce/presentation/cubit/auth_cubit.dart';
 import 'package:e_commerce/presentation/cubit/profile_cubit.dart';
@@ -122,6 +126,12 @@ void main() {
   final createOrder = CreateOrder(orderRepository);
   final cancelOrder = CancelOrder(orderRepository);
 
+  // --- Promotions feature ---
+  final promotionRemoteDataSource =
+      PromotionRemoteDataSourceImpl(apiClient: appApiClient);
+  final promotionRepository = PromotionRepositoryImpl(promotionRemoteDataSource);
+  final getActivePromotions = GetActivePromotions(promotionRepository);
+
   runApp(
     MultiBlocProvider(
       providers: [
@@ -161,6 +171,9 @@ void main() {
         ),
         BlocProvider(
           create: (_) => CheckoutBloc(createOrder),
+        ),
+        BlocProvider(
+          create: (_) => PromotionsBloc(getActivePromotions),
         ),
       ],
       child: const MyApp(),

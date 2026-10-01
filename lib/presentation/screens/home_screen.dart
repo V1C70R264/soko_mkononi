@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:e_commerce/presentation/bloc/cart/cart_bloc.dart';
 import 'package:e_commerce/presentation/bloc/cart/cart_event.dart';
 import 'package:e_commerce/presentation/bloc/cart/cart_state.dart';
@@ -22,6 +24,10 @@ import 'package:e_commerce/presentation/cubit/profile_state.dart';
 import 'package:e_commerce/presentation/bloc/favorites/favorites_bloc.dart';
 import 'package:e_commerce/presentation/bloc/favorites/favorites_event.dart';
 import 'package:e_commerce/presentation/bloc/favorites/favorites_state.dart';
+import 'package:e_commerce/presentation/bloc/promotions/promotions_bloc.dart';
+import 'package:e_commerce/presentation/bloc/promotions/promotions_event.dart';
+import 'package:e_commerce/presentation/bloc/promotions/promotions_state.dart';
+import 'package:e_commerce/domain/entities/promotion_entity.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -37,6 +43,7 @@ class _HomeScreenState extends State<HomeScreen> {
     context.read<ProfileCubit>().fetchUserProfile();
     context.read<HomeBloc>().add(LoadCategories());
     context.read<FavoritesBloc>().add(LoadFavorites());
+    context.read<PromotionsBloc>().add(LoadPromotions());
   }
 
   int _navIndex = 0;
@@ -158,26 +165,39 @@ class _GroceryHomeBody extends StatelessWidget {
                           },
                         ),
                         const SizedBox(height: 28),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: HomeLayout.horizontalPadding,
-                          ),
-                          child: Text(
-                            'Special Offers',
-                            style: theme.textTheme.titleLarge?.copyWith(
-                              color: scheme.onSurface,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
+                        BlocBuilder<PromotionsBloc, PromotionsState>(
+                          builder: (context, promoState) {
+                            if (promoState is! PromotionsLoaded ||
+                                promoState.promotions.isEmpty) {
+                              // No active promotions — the whole section
+                              // simply doesn't render.
+                              return const SizedBox.shrink();
+                            }
+
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: HomeLayout.horizontalPadding,
+                                  ),
+                                  child: Text(
+                                    'Special Offers',
+                                    style: theme.textTheme.titleLarge?.copyWith(
+                                      color: scheme.onSurface,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 14),
+                                _PromotionCarousel(
+                                  promotions: promoState.promotions,
+                                ),
+                                const SizedBox(height: 28),
+                              ],
+                            );
+                          },
                         ),
-                        const SizedBox(height: 14),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: HomeLayout.horizontalPadding,
-                          ),
-                          child: HomeBanner(offer: homeSpecialOffer),
-                        ),
-                        const SizedBox(height: 28),
                         Padding(
                           padding: const EdgeInsets.symmetric(
                             horizontal: HomeLayout.horizontalPadding,
@@ -290,6 +310,118 @@ class _GroceryHomeBody extends StatelessWidget {
           );
         },
       ),
+    );
+  }
+}
+
+/// Auto-advancing banner carousel for promotions. Advances every 4
+/// seconds; a manual swipe resets that timer so the banner doesn't
+/// yank away right after the user interacts with it.
+class _PromotionCarousel extends StatefulWidget {
+  final List<PromotionEntity> promotions;
+
+  const _PromotionCarousel({required this.promotions});
+
+  @override
+  State<_PromotionCarousel> createState() => _PromotionCarouselState();
+}
+
+class _PromotionCarouselState extends State<_PromotionCarousel> {
+  late final PageController _controller;
+  Timer? _autoAdvanceTimer;
+  int _currentPage = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = PageController();
+    _startAutoAdvance();
+  }
+
+  void _startAutoAdvance() {
+    _autoAdvanceTimer?.cancel();
+    if (widget.promotions.length <= 1) return; // nothing to rotate to
+    _autoAdvanceTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+      if (!_controller.hasClients) return;
+      final next = (_currentPage + 1) % widget.promotions.length;
+      _controller.animateToPage(
+        next,
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeInOut,
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    _autoAdvanceTimer?.cancel();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        SizedBox(
+          height: HomeLayout.bannerHeight,
+          child: PageView.builder(
+            controller: _controller,
+            itemCount: widget.promotions.length,
+            onPageChanged: (index) {
+              setState(() => _currentPage = index);
+              // User swiped manually — restart the timer so auto-advance
+              // doesn't immediately fight the swipe they just made.
+              _startAutoAdvance();
+            },
+            itemBuilder: (context, index) {
+              final promo = widget.promotions[index];
+              return Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: HomeLayout.horizontalPadding,
+                ),
+                child: HomeBanner(
+                  title: promo.title,
+                  subtitle: promo.subtitle,
+                  ctaLabel: promo.ctaLabel,
+                  imageUrl: promo.imageUrl,
+                  backgroundColor:
+                      HomeBanner.colorFromHex(promo.backgroundColorHex),
+                  onShopTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const ProductsScreen(),
+                      ),
+                    );
+                  },
+                ),
+              );
+            },
+          ),
+        ),
+        if (widget.promotions.length > 1) ...[
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(widget.promotions.length, (index) {
+              final isActive = index == _currentPage;
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 250),
+                margin: const EdgeInsets.symmetric(horizontal: 3),
+                width: isActive ? 18 : 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  color: isActive
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).colorScheme.outlineVariant,
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              );
+            }),
+          ),
+        ],
+      ],
     );
   }
 }

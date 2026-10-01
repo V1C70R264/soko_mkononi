@@ -1,5 +1,3 @@
-// 
-
 import 'package:e_commerce/core/theme/app_theme.dart';
 import 'package:e_commerce/domain/entities/order_entity.dart';
 import 'package:e_commerce/domain/entities/order_item_entity.dart';
@@ -7,6 +5,7 @@ import 'package:e_commerce/presentation/bloc/orders/orders_bloc.dart';
 import 'package:e_commerce/presentation/bloc/orders/orders_event.dart';
 import 'package:e_commerce/presentation/widgets/orders/order_card.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class OrderTrackingScreen extends StatelessWidget {
@@ -95,6 +94,8 @@ class OrderTrackingScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const SizedBox(height: 8),
+                    _OrderNumberCard(orderNumber: order.orderNumber),
+                    const SizedBox(height: 20),
                     // Rider row — placeholder until the backend has a
                     // courier/delivery-assignment field to read from.
                     if (order.status != 'cancelled') _RiderRow(order: order),
@@ -108,7 +109,7 @@ class OrderTrackingScreen extends StatelessWidget {
                       ),
                     const SizedBox(height: 24),
                     Text(
-                      'Order #${order.orderNumber}',
+                      'Items',
                       style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
@@ -158,6 +159,99 @@ class OrderTrackingScreen extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Receipt-style card for the order number — the one piece of data a
+/// user is most likely to need to read carefully or copy (e.g. to paste
+/// into a support message), so it gets its own visual weight instead of
+/// sitting as a plain heading.
+class _OrderNumberCard extends StatelessWidget {
+  final String orderNumber;
+  const _OrderNumberCard({required this.orderNumber});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0A000000),
+            blurRadius: 10,
+            offset: Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: AppTheme.primaryGreen.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.receipt_long_rounded,
+              color: AppTheme.primaryGreen,
+              size: 19,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'ORDER NUMBER',
+                  style: TextStyle(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.6,
+                    color: Colors.grey.shade500,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  orderNumber,
+                  style: const TextStyle(
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.black87,
+                    fontFeatures: [FontFeature.tabularFigures()],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          InkWell(
+            borderRadius: BorderRadius.circular(10),
+            onTap: () {
+              Clipboard.setData(ClipboardData(text: orderNumber));
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Order number copied'),
+                  duration: Duration(seconds: 1),
+                ),
+              );
+            },
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: Icon(
+                Icons.copy_rounded,
+                size: 18,
+                color: Colors.grey.shade500,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

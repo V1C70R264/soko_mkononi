@@ -41,7 +41,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -51,25 +51,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
           'My Profile',
           style: TextStyle(
             color: Color(0xFF1E262C),
-            fontSize: 24,
+            fontSize: 20,
             fontWeight: FontWeight.w800,
-            letterSpacing: -0.5,
+            letterSpacing: -0.4,
           ),
         ),
         actions: [
           IconButton(
-            icon: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-                border: Border.all(color: const Color(0xFFE2E8F0)),
-              ),
-              child: const Icon(
-                Icons.notifications_none_rounded,
-                color: Color(0xFF1E262C),
-                size: 20,
-              ),
+            icon: const Icon(
+              Icons.notifications_none_rounded,
+              color: Color(0xFF1E262C),
+              size: 22,
             ),
             onPressed: () {
               ScaffoldMessenger.of(context).showSnackBar(
@@ -138,9 +130,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
           final user = state.user;
           final displayName = _getDisplayName(user);
-          final usernameText = user?.username != null && user!.username!.isNotEmpty
-              ? '@${user.username}'
-              : '@user';
           final emailText = user?.email ?? 'No email';
           final phoneText = (user?.phoneNumber != null && user!.phoneNumber!.isNotEmpty)
               ? user.phoneNumber!
@@ -156,113 +145,80 @@ class _ProfileScreenState extends State<ProfileScreen> {
             color: AppTheme.primaryGreen,
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Dribbble-inspired Modern Profile Hero Card
-                  _buildProfileHeroCard(
+                  // Flat, minimal header — avatar + name + email only.
+                  _buildProfileHeader(
                     user: user,
                     displayName: displayName,
-                    usernameText: usernameText,
                     emailText: emailText,
-                    phoneText: phoneText,
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 28),
 
-                  // Quick Action Stats Bar
-                  _buildQuickStatsSection(context),
-                  const SizedBox(height: 24),
-
-                  // Shopping & Account Sections
-                  const Text(
-                    'Shopping & Orders',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF1E262C),
-                      letterSpacing: -0.3,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildGroupedCard([
-                    _buildSettingsTile(
+                  _buildFlatSectionList([
+                    _FlatTile(
                       icon: Icons.shopping_bag_outlined,
                       title: 'My Orders',
-                      subtitle: 'Track, return, or reorder items',
-                      badgeText: '2 Active',
-                      badgeColor: AppTheme.primaryGreen,
                       onTap: () {
                         Navigator.of(context).push(
                           MaterialPageRoute(builder: (context) => const OrdersScreen()),
                         );
                       },
                     ),
-                    _buildDivider(),
-                    _buildSettingsTile(
+                    _FlatTile(
+                      icon: Icons.shopping_cart_outlined,
+                      title: 'My Cart',
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(builder: (context) => const CartScreen()),
+                        );
+                      },
+                    ),
+                    _FlatTile(
                       icon: Icons.favorite_border_rounded,
                       title: 'Wishlist & Favorites',
-                      subtitle: 'Saved products you love',
-                      badgeText: '5 Items',
-                      badgeColor: const Color(0xFFEC4899),
                       onTap: () {
                         Navigator.of(context).push(
                           MaterialPageRoute(builder: (context) => const FavoritesScreen()),
                         );
                       },
                     ),
-                    _buildDivider(),
-                    _buildSettingsTile(
+                    _FlatTile(
                       icon: Icons.location_on_outlined,
                       title: 'Shipping Addresses',
-                      subtitle: 'Manage delivery addresses',
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(builder: (_) => const AddressesScreen()),
                       ),
                     ),
-                    _buildDivider(),
-                    _buildSettingsTile(
+                    _FlatTile(
                       icon: Icons.credit_card_outlined,
                       title: 'Payment Methods',
-                      subtitle: 'Cards, M-Pesa & Mobile wallets',
                       onTap: () => _showFeatureSnackBar('Payment methods feature'),
                     ),
                   ]),
 
-                  const SizedBox(height: 24),
-                  const Text(
-                    'Account Settings',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF1E262C),
-                      letterSpacing: -0.3,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildGroupedCard([
-                    _buildSettingsTile(
+                  const SizedBox(height: 20),
+
+                  _buildFlatSectionList([
+                    _FlatTile(
                       icon: Icons.person_outline_rounded,
                       title: 'Personal Details',
-                      subtitle: 'Update your name, email & phone',
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (_) => const EditProfileScreen(),
                         ),
                       ),
                     ),
-                    _buildDivider(),
-                    _buildSettingsTile(
+                    _FlatTile(
                       icon: Icons.lock_outline_rounded,
                       title: 'Security & Password',
-                      subtitle: 'Change password & security options',
                       onTap: () => _showFeatureSnackBar('Security settings'),
                     ),
-                    _buildDivider(),
-                    _buildSettingsTile(
+                    _FlatTile(
                       icon: Icons.notifications_none_rounded,
                       title: 'Notifications',
-                      subtitle: 'Promotions, orders & update alerts',
                       trailingWidget: Switch.adaptive(
                         value: _notificationsEnabled,
                         activeThumbColor: AppTheme.primaryGreen,
@@ -276,45 +232,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ]),
 
-                  const SizedBox(height: 24),
-                  const Text(
-                    'Preferences & Support',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF1E262C),
-                      letterSpacing: -0.3,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildGroupedCard([
-                    _buildSettingsTile(
+                  const SizedBox(height: 20),
+
+                  _buildFlatSectionList([
+                    _FlatTile(
                       icon: Icons.language_rounded,
                       title: 'App Language',
-                      subtitle: 'English (US) / Swahili',
                       trailingText: 'English',
                       onTap: () => _showFeatureSnackBar('Language selector'),
                     ),
-                    _buildDivider(),
-                    _buildSettingsTile(
+                    _FlatTile(
                       icon: Icons.headset_mic_outlined,
                       title: 'Help & Live Support',
-                      subtitle: '24/7 customer care & FAQs',
                       onTap: () => _showFeatureSnackBar('Customer support'),
                     ),
-                    _buildDivider(),
-                    _buildSettingsTile(
+                    _FlatTile(
                       icon: Icons.shield_outlined,
                       title: 'Privacy & Terms',
-                      subtitle: 'Data protection and policies',
                       onTap: () => _showFeatureSnackBar('Terms & privacy policy'),
                     ),
                   ]),
 
                   const SizedBox(height: 28),
 
-                  // Logout Button
-                  // Logout Button (Using reusable DangerOutlinedPillButton)
                   DangerOutlinedPillButton(
                     text: 'Log Out',
                     icon: Icons.logout_rounded,
@@ -342,442 +282,105 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  /// Modern Gradient Hero Card with Avatar & Camera Upload
-  Widget _buildProfileHeroCard({
+  /// Flat header: avatar, name, email — no gradient card, no stat row.
+  /// Matches the simpler drawer-style reference while staying a normal
+  /// full screen reached the same way as before.
+  Widget _buildProfileHeader({
     required User? user,
     required String displayName,
-    required String usernameText,
     required String emailText,
-    required String phoneText,
   }) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        gradient: const LinearGradient(
-          colors: [
-            Color(0xFF1E262C),
-            Color(0xFF2D3748),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.12),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              // Avatar with camera icon wired to backend
-              Stack(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(3),
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: LinearGradient(
-                        colors: [AppTheme.primaryGreen, Colors.white],
-                      ),
-                    ),
-                    child: CircleAvatar(
-                      radius: 42,
-                      key: ValueKey(_imageKey),
-                      backgroundColor: Colors.white,
-                      backgroundImage: _getProfileImageProvider(user?.profileImage, _profileImage),
-                      child: (_profileImage == null && (user?.profileImage == null || user!.profileImage!.trim().isEmpty))
-                          ? Text(
-                              _initialsFor(
-                                username: user?.username ?? '',
-                                fullName: user?.fullName,
-                                email: emailText,
-                              ),
-                              style: const TextStyle(
-                                color: AppTheme.primaryGreen,
-                                fontSize: 24,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            )
-                          : null,
-                    ),
-                  ),
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: GestureDetector(
-                      onTap: _showImageSourcePicker,
-                      child: Container(
-                        padding: const EdgeInsets.all(7),
-                        decoration: BoxDecoration(
-                          color: AppTheme.primaryGreen,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 2),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.2),
-                              blurRadius: 6,
-                            ),
-                          ],
-                        ),
-                        child: const Icon(
-                          Icons.camera_alt_rounded,
-                          color: Colors.white,
-                          size: 14,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(width: 16),
-              // User Details Column
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            displayName,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 20,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: -0.4,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        const Icon(
-                          Icons.verified_rounded,
-                          color: AppTheme.primaryGreen,
-                          size: 18,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      usernameText,
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.7),
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: AppTheme.primaryGreen.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: AppTheme.primaryGreen.withValues(alpha: 0.4),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: const [
-                          Icon(Icons.star_rounded, color: Colors.amber, size: 14),
-                          SizedBox(width: 4),
-                          Text(
-                            'Gold Member',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          const Divider(color: Color(0xFF334155), thickness: 1),
-          const SizedBox(height: 8),
-          // Email and Phone chips
-          Row(
-            children: [
-              Expanded(
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.email_outlined,
-                      color: Colors.white.withValues(alpha: 0.6),
-                      size: 15,
-                    ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        emailText,
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.8),
-                          fontSize: 12.5,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.phone_outlined,
-                      color: Colors.white.withValues(alpha: 0.6),
-                      size: 15,
-                    ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        phoneText,
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.8),
-                          fontSize: 12.5,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// 4 Quick Actions Grid (Orders, Wishlist, Cart, Points)
-  Widget _buildQuickStatsSection(BuildContext context) {
     return Row(
       children: [
-        _buildStatCard(
-          icon: Icons.local_mall_outlined,
-          title: 'My Orders',
-          value: '12 Items',
-          color: const Color(0xFF3B82F6),
-          onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (context) => const OrdersScreen()),
-            );
-          },
-        ),
-        const SizedBox(width: 10),
-        _buildStatCard(
-          icon: Icons.favorite_border_rounded,
-          title: 'Wishlist',
-          value: '5 Saved',
-          color: const Color(0xFFEC4899),
-          onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (context) => const FavoritesScreen()),
-            );
-          },
-        ),
-        const SizedBox(width: 10),
-        _buildStatCard(
-          icon: Icons.shopping_cart_outlined,
-          title: 'My Cart',
-          value: '3 Items',
-          color: AppTheme.primaryGreen,
-          onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (context) => const CartScreen()),
-            );
-          },
-        ),
-        const SizedBox(width: 10),
-        _buildStatCard(
-          icon: Icons.stars_rounded,
-          title: 'Rewards',
-          value: '1,250 Pts',
-          color: const Color(0xFFF59E0B),
-          onTap: () => _showFeatureSnackBar('Reward points & vouchers'),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStatCard({
-    required IconData icon,
-    required String title,
-    required String value,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return Expanded(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.02),
-                blurRadius: 8,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          child: Column(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
+        Stack(
+          children: [
+            CircleAvatar(
+              radius: 32,
+              key: ValueKey(_imageKey),
+              backgroundColor: const Color(0xFFF1F5F9),
+              backgroundImage: _getProfileImageProvider(user?.profileImage, _profileImage),
+              child: (_profileImage == null &&
+                      (user?.profileImage == null || user!.profileImage!.trim().isEmpty))
+                  ? Text(
+                      _initialsFor(
+                        username: user?.username ?? '',
+                        fullName: user?.fullName,
+                        email: emailText,
+                      ),
+                      style: const TextStyle(
+                        color: AppTheme.primaryGreen,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    )
+                  : null,
+            ),
+            Positioned(
+              bottom: 0,
+              right: 0,
+              child: GestureDetector(
+                onTap: _showImageSourcePicker,
+                child: Container(
+                  padding: const EdgeInsets.all(5),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryGreen,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 2),
+                  ),
+                  child: const Icon(
+                    Icons.camera_alt_rounded,
+                    color: Colors.white,
+                    size: 12,
+                  ),
                 ),
-                child: Icon(icon, color: color, size: 20),
               ),
-              const SizedBox(height: 8),
+            ),
+          ],
+        ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
               Text(
-                value,
+                displayName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
                   color: Color(0xFF1E262C),
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.3,
                 ),
               ),
               const SizedBox(height: 2),
               Text(
-                title,
+                emailText,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
-                  fontSize: 11,
                   color: Color(0xFF64748B),
+                  fontSize: 13,
                   fontWeight: FontWeight.w500,
                 ),
               ),
             ],
           ),
         ),
-      ),
+      ],
     );
   }
 
-  /// White Rounded Group Card
-  Widget _buildGroupedCard(List<Widget> children) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
+  /// A flat list of rows with thin dividers — no card border, no shadow.
+  Widget _buildFlatSectionList(List<_FlatTile> tiles) {
+    return Column(
+      children: [
+        for (int i = 0; i < tiles.length; i++) ...[
+          tiles[i],
+          if (i != tiles.length - 1)
+            const Divider(height: 1, thickness: 1, color: Color(0xFFF1F5F9)),
         ],
-      ),
-      child: Column(children: children),
-    );
-  }
-
-  Widget _buildDivider() {
-    return const Divider(
-      height: 1,
-      thickness: 1,
-      color: Color(0xFFF1F5F9),
-      indent: 64,
-    );
-  }
-
-  /// Reusable Settings Tile
-  Widget _buildSettingsTile({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    String? badgeText,
-    Color? badgeColor,
-    String? trailingText,
-    Widget? trailingWidget,
-    VoidCallback? onTap,
-  }) {
-    return ListTile(
-      onTap: onTap,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      leading: Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: const Color(0xFFF1F5F9),
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Icon(icon, color: const Color(0xFF334155), size: 22),
-      ),
-      title: Text(
-        title,
-        style: const TextStyle(
-          fontSize: 14.5,
-          fontWeight: FontWeight.w600,
-          color: Color(0xFF1E262C),
-        ),
-      ),
-      subtitle: Text(
-        subtitle,
-        style: const TextStyle(
-          fontSize: 12.5,
-          color: Color(0xFF64748B),
-        ),
-      ),
-      trailing: trailingWidget ??
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (badgeText != null)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: badgeColor ?? AppTheme.primaryGreen,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    badgeText,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              if (trailingText != null)
-                Text(
-                  trailingText,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: Color(0xFF64748B),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              const SizedBox(width: 4),
-              const Icon(
-                Icons.chevron_right_rounded,
-                color: Color(0xFF94A3B8),
-                size: 20,
-              ),
-            ],
-          ),
+      ],
     );
   }
 
@@ -950,8 +553,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-
-
   void _showLogoutDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -987,6 +588,70 @@ class _ProfileScreenState extends State<ProfileScreen> {
       SnackBar(
         content: Text('$title tapped'),
         duration: const Duration(seconds: 1),
+      ),
+    );
+  }
+}
+
+/// A single flat row: icon, title, and an optional trailing chip/text/
+/// switch, with no card background or border — matches the minimal,
+/// list-style reference design.
+class _FlatTile extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String? trailingText;
+  final Widget? trailingWidget;
+  final VoidCallback? onTap;
+
+  const _FlatTile({
+    required this.icon,
+    required this.title,
+    this.trailingText,
+    this.trailingWidget,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        child: Row(
+          children: [
+            Icon(icon, color: const Color(0xFF334155), size: 22),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF1E262C),
+                ),
+              ),
+            ),
+            if (trailingWidget != null)
+              trailingWidget!
+            else ...[
+              if (trailingText != null)
+                Text(
+                  trailingText!,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: Color(0xFF64748B),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              const SizedBox(width: 4),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: Color(0xFF94A3B8),
+                size: 20,
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
