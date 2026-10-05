@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 /// Application-wide theme aligned with the Soko Mkononi brand palette.
 abstract final class AppTheme {
@@ -22,12 +23,16 @@ abstract final class AppTheme {
       onPrimary: Colors.white,
     );
 
-    final textTheme = Typography.material2021(platform: TargetPlatform.android)
-        .black
-        .apply(
-          bodyColor: colorScheme.onSurface,
-          displayColor: colorScheme.onSurface,
-        );
+    // Poppins matches the rounded, geometric weight used throughout the
+    // reference screenshots we've been designing against. Built from the
+    // existing Material typography scale (same sizes/weights your app
+    // already relies on) so only the glyph shapes change, not the sizing.
+    final baseTextTheme =
+        Typography.material2021(platform: TargetPlatform.android).black.apply(
+              bodyColor: colorScheme.onSurface,
+              displayColor: colorScheme.onSurface,
+            );
+    final textTheme = GoogleFonts.openSansTextTheme(baseTextTheme);
 
     return ThemeData(
       useMaterial3: true,

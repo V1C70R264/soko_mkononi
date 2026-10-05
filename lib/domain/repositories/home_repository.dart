@@ -10,4 +10,6 @@ abstract class HomeRepository {
   /// `cursor` is null for the first page. Pass back a previous result's
   /// `nextCursor` to fetch the following page.
   Future<Result<ProductPageEntity>> searchProducts(String query, {String? cursor});
+  Future<Result<ProductPageEntity>> getTrendingProducts({String? cursor});
+  Future<Result<ProductPageEntity>> getNewSellerProducts({String? cursor});
 }

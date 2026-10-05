@@ -1,3 +1,4 @@
+// lib/presentation/screens/products_screen.dart
 import 'dart:async';
 
 import 'package:e_commerce/domain/entities/product_entity.dart';
@@ -7,6 +8,7 @@ import 'package:e_commerce/presentation/bloc/cart/cart_state.dart';
 import 'package:e_commerce/presentation/bloc/favorites/favorites_bloc.dart';
 import 'package:e_commerce/presentation/bloc/favorites/favorites_event.dart';
 import 'package:e_commerce/presentation/bloc/favorites/favorites_state.dart';
+import 'package:e_commerce/presentation/bloc/search/product_feed_type.dart';
 import 'package:e_commerce/presentation/bloc/search/search_bloc.dart';
 import 'package:e_commerce/presentation/bloc/search/search_event.dart';
 import 'package:e_commerce/presentation/bloc/search/search_state.dart';
@@ -15,10 +17,11 @@ import 'package:e_commerce/presentation/widgets/home/product_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-/// Serves two entry points from Home: the search bar (autofocus: true,
-/// starts empty and fills as the user types) and "View All" (autofocus:
-/// false, loads every product immediately). Both hit the same endpoint,
-/// since an empty search term returns everything unfiltered.
+/// Serves three entry points from Home: the search bar (autofocus: true,
+/// starts empty and fills as the user types), "View All" (autofocus:
+/// false, loads every product immediately), and the Trending/New Sellers
+/// tabs. All share one SearchBloc, which caches each tab's data so
+/// switching back to a previously-viewed tab is instant.
 class ProductsScreen extends StatefulWidget {
   final bool autofocusSearch;
 
@@ -32,15 +35,17 @@ class _ProductsScreenState extends State<ProductsScreen> {
   final _controller = TextEditingController();
   final _scrollController = ScrollController();
   Timer? _debounce;
-  int _selectedTab = 0;
 
-  static const _tabs = ['View All', 'Trending items', 'New seller', 'Vendor'];
+  static const _tabs = [
+    (ProductFeedType.viewAll, 'View All'),
+    (ProductFeedType.trending, 'Trending items'),
+    (ProductFeedType.newSellers, 'New seller'),
+  ];
   static const _loadMoreThreshold = 300.0;
 
   @override
   void initState() {
     super.initState();
-    // Load everything immediately, whichever entry point was used.
     context.read<SearchBloc>().add(SearchQueryChanged(''));
     _scrollController.addListener(_onScroll);
   }
@@ -57,7 +62,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
   void _onScroll() {
     final position = _scrollController.position;
     if (position.pixels >= position.maxScrollExtent - _loadMoreThreshold) {
-      context.read<SearchBloc>().add(SearchLoadMore());
+      context.read<SearchBloc>().add(LoadMoreActiveFeed());
     }
   }
 
@@ -66,19 +71,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
     _debounce = Timer(const Duration(milliseconds: 400), () {
       context.read<SearchBloc>().add(SearchQueryChanged(query));
     });
-  }
-
-  void _onTabTap(int index) {
-    if (index == 0) {
-      setState(() => _selectedTab = 0);
-      return;
-    }
-    // Trending / New seller / Vendor need backend support that doesn't
-    // exist yet (no trending metric, no seller-picker endpoint). Left
-    // visible for the design, honestly inert for now.
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('${_tabs[index]} coming soon')),
-    );
   }
 
   @override
@@ -128,12 +120,11 @@ class _ProductsScreenState extends State<ProductsScreen> {
                       child: Text(
                         'See All Items',
                         textAlign: TextAlign.center,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w800,
-                        ),
+                        style: theme.textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w800),
                       ),
                     ),
-                    const SizedBox(width: 40), // balances the back button
+                    const SizedBox(width: 40),
                   ],
                 ),
               ),
@@ -157,61 +148,87 @@ class _ProductsScreenState extends State<ProductsScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              SizedBox(
-                height: 36,
-                child: ListView.separated(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  scrollDirection: Axis.horizontal,
-                  itemCount: _tabs.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 20),
-                  itemBuilder: (context, index) {
-                    final selected = index == _selectedTab;
-                    return GestureDetector(
-                      onTap: () => _onTabTap(index),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            _tabs[index],
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: selected
-                                  ? scheme.primary
-                                  : scheme.onSurfaceVariant,
-                              fontWeight:
-                                  selected ? FontWeight.w700 : FontWeight.w500,
-                            ),
-                          ),
-                          if (selected) ...[
-                            const SizedBox(height: 6),
-                            Container(
-                              width: 20,
-                              height: 3,
-                              decoration: BoxDecoration(
-                                color: scheme.primary,
-                                borderRadius: BorderRadius.circular(2),
+              BlocBuilder<SearchBloc, SearchState>(
+                buildWhen: (prev, curr) => prev.activeFeed != curr.activeFeed,
+                builder: (context, state) {
+                  return SizedBox(
+                    height: 36,
+                    child: ListView.separated(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      scrollDirection: Axis.horizontal,
+                      itemCount: _tabs.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 20),
+                      itemBuilder: (context, index) {
+                        final (feedType, label) = _tabs[index];
+                        final selected = feedType == state.activeFeed;
+                        return GestureDetector(
+                          onTap: () {
+                            context.read<SearchBloc>().add(SwitchFeed(feedType));
+                            // Scroll position doesn't carry over between
+                            // feeds, so reset it on tab switch.
+                            if (_scrollController.hasClients) {
+                              _scrollController.jumpTo(0);
+                            }
+                          },
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                label,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: selected
+                                      ? scheme.primary
+                                      : scheme.onSurfaceVariant,
+                                  fontWeight: selected
+                                      ? FontWeight.w700
+                                      : FontWeight.w500,
+                                ),
                               ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    );
-                  },
-                ),
+                              if (selected) ...[
+                                const SizedBox(height: 6),
+                                Container(
+                                  width: 20,
+                                  height: 3,
+                                  decoration: BoxDecoration(
+                                    color: scheme.primary,
+                                    borderRadius: BorderRadius.circular(2),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  );
+                },
               ),
               const SizedBox(height: 16),
               Expanded(
                 child: BlocBuilder<SearchBloc, SearchState>(
                   builder: (context, state) {
-                    if (state is SearchLoading || state is SearchInitial) {
+                    final feed = state.activeFeedData;
+
+                    if (!feed.hasLoadedOnce) {
                       return const Center(child: CircularProgressIndicator());
                     }
-                    if (state is SearchError) {
-                      return Center(child: Text(state.message));
+                    if (feed.errorMessage != null && feed.products.isEmpty) {
+                      return Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(feed.errorMessage!),
+                            TextButton(
+                              onPressed: () => context
+                                  .read<SearchBloc>()
+                                  .add(SwitchFeed(state.activeFeed)),
+                              child: const Text('Retry'),
+                            ),
+                          ],
+                        ),
+                      );
                     }
-
-                    final loaded = state as SearchLoaded;
-                    final products = loaded.products;
-                    if (products.isEmpty) {
+                    if (feed.products.isEmpty) {
                       return const Center(child: Text('No products found'));
                     }
 
@@ -236,21 +253,19 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                 ),
                                 delegate: SliverChildBuilderDelegate(
                                   (context, index) {
-                                    final ProductEntity item = products[index];
+                                    final ProductEntity item = feed.products[index];
                                     return ProductCard(
                                       imageUrl: item.imageUrl,
                                       name: item.name,
                                       price: item.price,
                                       subtitle: item.description,
-                                      isFavorited:
-                                          favoriteIds.contains(item.id),
+                                      isFavorited: favoriteIds.contains(item.id),
                                       onTap: () {
                                         Navigator.push(
                                           context,
                                           MaterialPageRoute(
                                             builder: (_) =>
-                                                ProductDetailScreen(
-                                                    product: item),
+                                                ProductDetailScreen(product: item),
                                           ),
                                         );
                                       },
@@ -269,12 +284,12 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                       },
                                     );
                                   },
-                                  childCount: products.length,
+                                  childCount: feed.products.length,
                                 ),
                               ),
                             ),
                             SliverToBoxAdapter(
-                              child: loaded.isLoadingMore
+                              child: feed.isLoadingMore
                                   ? const Padding(
                                       padding: EdgeInsets.symmetric(vertical: 24),
                                       child: Center(

@@ -1,3 +1,4 @@
+// lib/data/repositories/home_repository_impl.dart
 import 'package:dio/dio.dart';
 import 'package:e_commerce/core/network/dio_error_mapper.dart';
 import 'package:e_commerce/core/utils/result.dart';
@@ -42,6 +43,30 @@ class HomeRepositoryImpl implements HomeRepository {
       return Success(page);
     } on DioException catch (e) {
       return Error(messageFromDio(e, fallback: 'Failed to search products'));
+    } catch (e) {
+      return Error(e.toString());
+    }
+  }
+
+  @override
+  Future<Result<ProductPageEntity>> getTrendingProducts({String? cursor}) async {
+    try {
+      final page = await remoteDataSource.getTrendingProducts(cursor: cursor);
+      return Success(page);
+    } on DioException catch (e) {
+      return Error(messageFromDio(e, fallback: 'Failed to load trending products'));
+    } catch (e) {
+      return Error(e.toString());
+    }
+  }
+
+  @override
+  Future<Result<ProductPageEntity>> getNewSellerProducts({String? cursor}) async {
+    try {
+      final page = await remoteDataSource.getNewSellerProducts(cursor: cursor);
+      return Success(page);
+    } on DioException catch (e) {
+      return Error(messageFromDio(e, fallback: 'Failed to load new seller products'));
     } catch (e) {
       return Error(e.toString());
     }

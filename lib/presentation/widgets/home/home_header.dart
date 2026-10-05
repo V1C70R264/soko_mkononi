@@ -1,8 +1,11 @@
 import 'package:e_commerce/core/utils/profile_image_utils.dart';
+import 'package:e_commerce/presentation/bloc/notifications/notifications_bloc.dart';
+import 'package:e_commerce/presentation/bloc/notifications/notifications_state.dart';
 import 'package:e_commerce/presentation/data/home_mock_data.dart';
 import 'package:e_commerce/presentation/widgets/home/category_item.dart';
 import 'package:e_commerce/presentation/widgets/home/search_bar_widget.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:e_commerce/domain/entities/category_entity.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
@@ -134,22 +137,46 @@ class HomeHeader extends StatelessWidget {
                     child: Stack(
                       alignment: Alignment.center,
                       children: [
-                        const FaIcon(
-                          FontAwesomeIcons.solidBell,
+                        const Icon(
+                          Icons.notifications_rounded,
                           color: Color(0xFF0F172A),
-                          size: 19,
+                          size: 20,
                         ),
-                        Positioned(
-                          top: 10,
-                          right: 11,
-                          child: Container(
-                            width: 8,
-                            height: 8,
-                            decoration: const BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Color(0xFF26AD71),
-                            ),
-                          ),
+                        BlocBuilder<NotificationsBloc, NotificationsState>(
+                          builder: (context, state) {
+                            if (state.unreadCount == 0) {
+                              return const SizedBox.shrink();
+                            }
+                            return Positioned(
+                              top: 8,
+                              right: 9,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                  vertical: 1,
+                                ),
+                                constraints: const BoxConstraints(
+                                  minWidth: 14,
+                                  minHeight: 14,
+                                ),
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFF26AD71),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Text(
+                                  state.unreadCount > 9
+                                      ? '9+'
+                                      : '${state.unreadCount}',
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
                         ),
                       ],
                     ),

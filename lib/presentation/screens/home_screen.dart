@@ -9,6 +9,7 @@ import 'package:e_commerce/presentation/bloc/home_state.dart';
 import 'package:e_commerce/presentation/data/home_mock_data.dart';
 import 'package:e_commerce/presentation/screens/cart_screen.dart';
 import 'package:e_commerce/presentation/screens/favorites_screen.dart';
+import 'package:e_commerce/presentation/screens/notifications_screen.dart';
 import 'package:e_commerce/presentation/screens/orders_screen.dart';
 import 'package:e_commerce/presentation/screens/products_screen.dart';
 import 'package:e_commerce/presentation/screens/profile_screen.dart';
@@ -27,6 +28,8 @@ import 'package:e_commerce/presentation/bloc/favorites/favorites_state.dart';
 import 'package:e_commerce/presentation/bloc/promotions/promotions_bloc.dart';
 import 'package:e_commerce/presentation/bloc/promotions/promotions_event.dart';
 import 'package:e_commerce/presentation/bloc/promotions/promotions_state.dart';
+import 'package:e_commerce/presentation/bloc/notifications/notifications_bloc.dart';
+import 'package:e_commerce/presentation/bloc/notifications/notifications_event.dart';
 import 'package:e_commerce/domain/entities/promotion_entity.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -44,6 +47,7 @@ class _HomeScreenState extends State<HomeScreen> {
     context.read<HomeBloc>().add(LoadCategories());
     context.read<FavoritesBloc>().add(LoadFavorites());
     context.read<PromotionsBloc>().add(LoadPromotions());
+    context.read<NotificationsBloc>().add(LoadNotifications());
   }
 
   int _navIndex = 0;
@@ -158,6 +162,14 @@ class _GroceryHomeBody extends StatelessWidget {
                                     builder: (_) => const ProductsScreen(
                                       autofocusSearch: true,
                                     ),
+                                  ),
+                                );
+                              },
+                              onNotificationTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const NotificationsScreen(),
                                   ),
                                 );
                               },

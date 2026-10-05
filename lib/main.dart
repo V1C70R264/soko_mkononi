@@ -53,8 +53,17 @@ import 'package:e_commerce/presentation/cubit/profile_cubit.dart';
 import 'package:e_commerce/presentation/screens/home_screen.dart';
 import 'package:e_commerce/presentation/screens/onboarding_screen.dart';
 import 'package:e_commerce/presentation/screens/splash_screen.dart';
+import 'package:e_commerce/data/datasources/remote/notification_remote_datasource.dart';
+import 'package:e_commerce/data/repositories/notification_repository_impl.dart';
+import 'package:e_commerce/domain/usecases/get_notifications.dart';
+import 'package:e_commerce/domain/usecases/get_unread_notification_count.dart';
+import 'package:e_commerce/domain/usecases/mark_notification_read.dart';
+import 'package:e_commerce/domain/usecases/mark_all_notifications_read.dart';
+import 'package:e_commerce/presentation/bloc/notifications/notifications_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:e_commerce/domain/usecases/get_trending_products.dart';
+import 'package:e_commerce/domain/usecases/get_new_seller_products.dart';
 
 late final TokenStorage appTokenStorage;
 late final ApiClient appApiClient;
@@ -94,6 +103,8 @@ void main() {
 
   // --- Search feature (reuses homeRepository, no new datasource) ---
   final searchProducts = SearchProducts(homeRepository);
+  final getTrendingProducts = GetTrendingProducts(homeRepository);
+  final getNewSellerProducts = GetNewSellerProducts(homeRepository);
 
   // --- Cart feature ---
   final cartRemoteDataSource = CartRemoteDataSourceImpl(apiClient: appApiClient);
@@ -132,6 +143,18 @@ void main() {
   final promotionRepository = PromotionRepositoryImpl(promotionRemoteDataSource);
   final getActivePromotions = GetActivePromotions(promotionRepository);
 
+    // --- Notifications feature ---
+  final notificationRemoteDataSource =
+      NotificationRemoteDataSourceImpl(apiClient: appApiClient);
+  final notificationRepository =
+      NotificationRepositoryImpl(notificationRemoteDataSource);
+  final getNotifications = GetNotifications(notificationRepository);
+  final getUnreadNotificationCount =
+      GetUnreadNotificationCount(notificationRepository);
+  final markNotificationRead = MarkNotificationRead(notificationRepository);
+  final markAllNotificationsRead =
+      MarkAllNotificationsRead(notificationRepository);
+
   runApp(
     MultiBlocProvider(
       providers: [
@@ -161,7 +184,8 @@ void main() {
           create: (_) => FavoritesBloc(getFavorites, toggleFavorite),
         ),
         BlocProvider(
-          create: (_) => SearchBloc(searchProducts),
+          create: (_) => SearchBloc(searchProducts, getTrendingProducts,
+            getNewSellerProducts,wwsl),
         ),
         BlocProvider(
           create: (_) => AddressBloc(getAddresses, createAddress, setDefaultAddress),
@@ -174,6 +198,14 @@ void main() {
         ),
         BlocProvider(
           create: (_) => PromotionsBloc(getActivePromotions),
+        ),
+        BlocProvider(
+          create: (_) => NotificationsBloc(
+            getNotifications,
+            getUnreadNotificationCount,
+            markNotificationRead,
+            markAllNotificationsRead,
+          ),
         ),
       ],
       child: const MyApp(),
