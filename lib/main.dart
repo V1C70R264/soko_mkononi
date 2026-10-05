@@ -185,7 +185,7 @@ void main() {
         ),
         BlocProvider(
           create: (_) => SearchBloc(searchProducts, getTrendingProducts,
-            getNewSellerProducts,wwsl),
+            getNewSellerProducts),
         ),
         BlocProvider(
           create: (_) => AddressBloc(getAddresses, createAddress, setDefaultAddress),
