@@ -7,6 +7,8 @@ import 'package:e_commerce/presentation/widgets/orders/order_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:e_commerce/presentation/widgets/common/app_back_button.dart';
+
 
 class OrderTrackingScreen extends StatelessWidget {
   final OrderEntity order;
@@ -46,29 +48,7 @@ class OrderTrackingScreen extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               child: Row(
                 children: [
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Container(
-                      width: 42,
-                      height: 42,
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Color(0x0D000000),
-                            blurRadius: 10,
-                            offset: Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.chevron_left_rounded,
-                        size: 26,
-                        color: Colors.black87,
-                      ),
-                    ),
-                  ),
+                  const AppBackButton(),
                   const Expanded(
                     child: Text(
                       'Order Tracking',

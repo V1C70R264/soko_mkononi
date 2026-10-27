@@ -16,6 +16,10 @@ import 'package:e_commerce/presentation/screens/product_detail_screen.dart';
 import 'package:e_commerce/presentation/widgets/home/product_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:e_commerce/presentation/screens/stores_screen.dart';
+import 'package:e_commerce/core/theme/app_icons.dart';
+import 'package:hugeicons/hugeicons.dart';
+import 'package:e_commerce/presentation/widgets/common/app_back_button.dart';
 
 /// Serves three entry points from Home: the search bar (autofocus: true,
 /// starts empty and fills as the user types), "View All" (autofocus:
@@ -112,10 +116,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
                 padding: const EdgeInsets.fromLTRB(8, 4, 20, 8),
                 child: Row(
                   children: [
-                    IconButton(
-                      onPressed: () => Navigator.maybePop(context),
-                      icon: const Icon(Icons.arrow_back_rounded),
-                    ),
+                    const AppBackButton(),
+                    SizedBox(width: 42),
                     Expanded(
                       child: Text(
                         'See All Items',
@@ -136,7 +138,14 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   onChanged: _onQueryChanged,
                   decoration: InputDecoration(
                     hintText: 'Search...',
-                    prefixIcon: const Icon(Icons.search_rounded),
+                    prefixIcon: Padding(
+                    padding: const EdgeInsets.all(14),
+                    child: HugeIcon(
+                      icon: AppIcons.search,
+                      size: 20,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
                     filled: true,
                     fillColor: scheme.surfaceContainerHigh,
                     border: OutlineInputBorder(
@@ -156,9 +165,26 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     child: ListView.separated(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       scrollDirection: Axis.horizontal,
-                      itemCount: _tabs.length,
+                      itemCount: _tabs.length + 1,
                       separatorBuilder: (_, __) => const SizedBox(width: 20),
                       itemBuilder: (context, index) {
+                        if (index == _tabs.length) {
+                          return GestureDetector(
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const StoresScreen(),
+                              ),
+                            ),
+                            child: Text(
+                              'Vendor',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: scheme.onSurfaceVariant,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          );
+                        }
                         final (feedType, label) = _tabs[index];
                         final selected = feedType == state.activeFeed;
                         return GestureDetector(

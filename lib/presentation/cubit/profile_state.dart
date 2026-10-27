@@ -20,6 +20,15 @@ class ProfileState extends Equatable {
   /// The UI should consume this and reset it (e.g. pop the edit screen).
   final bool updateSuccess;
 
+  /// True while a password-change request is in progress.
+  final bool isChangingPassword;
+
+  /// Momentarily set to true after a successful password change. The UI
+  /// should consume this by logging the user out — the backend blacklists
+  /// all existing tokens on a successful change, so the current session
+  /// is no longer valid regardless.
+  final bool passwordChangeSuccess;
+
   /// Bumped after each successful image upload so avatar widgets can bust
   /// Flutter/CDN caches even when the backend returns the same URL string.
   final int profileImageVersion;
@@ -32,6 +41,8 @@ class ProfileState extends Equatable {
     this.isUploading = false,
     this.isSaving = false,
     this.updateSuccess = false,
+    this.isChangingPassword = false,
+    this.passwordChangeSuccess = false,
     this.profileImageVersion = 0,
     this.error,
   });
@@ -42,6 +53,8 @@ class ProfileState extends Equatable {
     bool? isUploading,
     bool? isSaving,
     bool? updateSuccess,
+    bool? isChangingPassword,
+    bool? passwordChangeSuccess,
     int? profileImageVersion,
     // Use Object? so callers can explicitly pass null to clear the error.
     Object? error = _kUndefined,
@@ -52,6 +65,8 @@ class ProfileState extends Equatable {
       isUploading: isUploading ?? this.isUploading,
       isSaving: isSaving ?? this.isSaving,
       updateSuccess: updateSuccess ?? this.updateSuccess,
+      isChangingPassword: isChangingPassword ?? this.isChangingPassword,
+      passwordChangeSuccess: passwordChangeSuccess ?? this.passwordChangeSuccess,
       profileImageVersion: profileImageVersion ?? this.profileImageVersion,
       error: identical(error, _kUndefined) ? this.error : error as String?,
     );
@@ -64,6 +79,8 @@ class ProfileState extends Equatable {
         isUploading,
         isSaving,
         updateSuccess,
+        isChangingPassword,
+        passwordChangeSuccess,
         profileImageVersion,
         error,
       ];

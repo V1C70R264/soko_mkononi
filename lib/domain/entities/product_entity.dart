@@ -8,6 +8,10 @@ class ProductEntity {
   final int categoryId;
   final String imageUrl;
   final bool isFavorited;
+  final double? averageRating;
+  final int reviewCount;
+  final int? storeId;
+  final String? storeName;
 
   ProductEntity({
     required this.id,
@@ -18,5 +22,9 @@ class ProductEntity {
     required this.categoryId,
     required this.imageUrl,
     required this.isFavorited,
+    this.averageRating,
+    this.reviewCount = 0,
+    this.storeId,
+    this.storeName,
   });
 }

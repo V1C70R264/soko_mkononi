@@ -64,6 +64,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:e_commerce/domain/usecases/get_trending_products.dart';
 import 'package:e_commerce/domain/usecases/get_new_seller_products.dart';
+import 'package:e_commerce/domain/usecases/user/change_password.dart';
+import 'package:e_commerce/data/datasources/remote/review_remote_datasource.dart';
+import 'package:e_commerce/data/repositories/review_repository_impl.dart';
+import 'package:e_commerce/domain/usecases/get_reviews.dart';
+import 'package:e_commerce/domain/usecases/check_can_review.dart';
+import 'package:e_commerce/domain/usecases/create_review.dart';
+import 'package:e_commerce/domain/repositories/review_repository.dart';
+import 'package:e_commerce/data/datasources/remote/store_remote_datasource.dart';
+import 'package:e_commerce/data/repositories/store_repository_impl.dart';
+import 'package:e_commerce/domain/usecases/get_stores.dart';
+import 'package:e_commerce/domain/usecases/get_store_products.dart';
+import 'package:e_commerce/presentation/bloc/stores/stores_bloc.dart';
+import 'package:e_commerce/presentation/bloc/stores/store_products_bloc.dart';
+import 'package:e_commerce/domain/usecases/get_my_store.dart';
+import 'package:e_commerce/domain/usecases/apply_for_store.dart';
+import 'package:e_commerce/presentation/bloc/stores/my_store_bloc.dart';
+import 'package:e_commerce/domain/repositories/store_repository.dart';
 
 late final TokenStorage appTokenStorage;
 late final ApiClient appApiClient;
@@ -92,6 +109,7 @@ void main() {
 
   final userRepository = UserRepositoryImpl(userRemote);
   final getUserProfile = GetUserProfile(userRepository);
+  final changePassword = ChangePassword(userRepository);
   final updateUserProfileImage = UpdateUserProfileImage(userRepository);
   final updateProfileDetails = UpdateProfileDetails(userRepository);
 
@@ -155,8 +173,26 @@ void main() {
   final markAllNotificationsRead =
       MarkAllNotificationsRead(notificationRepository);
 
+    // --- Reviews feature ---
+  final reviewRemoteDataSource = ReviewRemoteDataSourceImpl(apiClient: appApiClient);
+  final reviewRepository = ReviewRepositoryImpl(reviewRemoteDataSource);
+  
+
+    // --- Stores (vendors) feature ---
+  final storeRemoteDataSource = StoreRemoteDataSourceImpl(apiClient: appApiClient);
+  final storeRepository = StoreRepositoryImpl(storeRemoteDataSource);
+  final getStores = GetStores(storeRepository);
+  final getStoreProducts = GetStoreProducts(storeRepository);
+  final getMyStore = GetMyStore(storeRepository);
+  final applyForStore = ApplyForStore(storeRepository);
+
   runApp(
-    MultiBlocProvider(
+    MultiRepositoryProvider(
+      providers: [
+        RepositoryProvider<StoreRepository>.value(value: storeRepository),
+        RepositoryProvider<ReviewRepository>.value(value: reviewRepository),
+      ],
+    child: MultiBlocProvider(
       providers: [
         BlocProvider(
           create: (_) => AuthCubit(signInWithGoogle),
@@ -166,6 +202,7 @@ void main() {
             getUserProfile,
             updateUserProfileImage,
             updateProfileDetails,
+            changePassword,
           ),
         ),
         BlocProvider(
@@ -207,11 +244,21 @@ void main() {
             markAllNotificationsRead,
           ),
         ),
+        BlocProvider(
+          create: (_) => StoresBloc(getStores),
+        ),
+        BlocProvider(
+          create: (_) => MyStoreBloc(getMyStore, applyForStore),
+        ),
+        
       ],
       child: const MyApp(),
     ),
+    ),
+
   );
 }
+
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});

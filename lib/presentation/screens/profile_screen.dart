@@ -16,6 +16,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:e_commerce/presentation/screens/addresses_screen.dart';
+import 'package:e_commerce/presentation/screens/security_password_screen.dart';
+import 'package:e_commerce/presentation/screens/help_support_screen.dart';
+import 'package:e_commerce/presentation/screens/privacy_terms_screen.dart';
+import 'package:e_commerce/presentation/screens/become_seller_screen.dart';
+import 'package:e_commerce/core/theme/app_icons.dart';
+import 'package:hugeicons/hugeicons.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -58,9 +64,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(
-              Icons.notifications_none_rounded,
-              color: Color(0xFF1E262C),
+            icon:  HugeIcon(
+              icon: AppIcons.notification,
+              color: const Color(0xFF1E262C),
               size: 22,
             ),
             onPressed: () {
@@ -131,9 +137,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           final user = state.user;
           final displayName = _getDisplayName(user);
           final emailText = user?.email ?? 'No email';
-          final phoneText = (user?.phoneNumber != null && user!.phoneNumber!.isNotEmpty)
-              ? user.phoneNumber!
-              : 'Add phone number';
 
           return RefreshIndicator(
             onRefresh: () async {
@@ -149,7 +152,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Flat, minimal header — avatar + name + email only.
                   _buildProfileHeader(
                     user: user,
                     displayName: displayName,
@@ -159,7 +161,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                   _buildFlatSectionList([
                     _FlatTile(
-                      icon: Icons.shopping_bag_outlined,
+                      icon: AppIcons.shoppingBag,
                       title: 'My Orders',
                       onTap: () {
                         Navigator.of(context).push(
@@ -168,7 +170,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       },
                     ),
                     _FlatTile(
-                      icon: Icons.shopping_cart_outlined,
+                      icon: AppIcons.cart,
                       title: 'My Cart',
                       onTap: () {
                         Navigator.of(context).push(
@@ -177,7 +179,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       },
                     ),
                     _FlatTile(
-                      icon: Icons.favorite_border_rounded,
+                      icon: AppIcons.favorite,
                       title: 'Wishlist & Favorites',
                       onTap: () {
                         Navigator.of(context).push(
@@ -186,14 +188,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       },
                     ),
                     _FlatTile(
-                      icon: Icons.location_on_outlined,
+                      icon: AppIcons.location,
                       title: 'Shipping Addresses',
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(builder: (_) => const AddressesScreen()),
                       ),
                     ),
                     _FlatTile(
-                      icon: Icons.credit_card_outlined,
+                      icon: AppIcons.store,
+                      title: 'Become a Seller',
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const BecomeSellerScreen(),
+                        ),
+                      ),
+                    ),
+                    _FlatTile(
+                      icon: AppIcons.card,
                       title: 'Payment Methods',
                       onTap: () => _showFeatureSnackBar('Payment methods feature'),
                     ),
@@ -203,7 +214,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                   _buildFlatSectionList([
                     _FlatTile(
-                      icon: Icons.person_outline_rounded,
+                      icon: AppIcons.account,
                       title: 'Personal Details',
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(
@@ -212,12 +223,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     ),
                     _FlatTile(
-                      icon: Icons.lock_outline_rounded,
+                      icon: AppIcons.lock,
                       title: 'Security & Password',
-                      onTap: () => _showFeatureSnackBar('Security settings'),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const SecurityPasswordScreen(),
+                        ),
+                      ),
                     ),
                     _FlatTile(
-                      icon: Icons.notifications_none_rounded,
+                      icon: AppIcons.notification,
                       title: 'Notifications',
                       trailingWidget: Switch.adaptive(
                         value: _notificationsEnabled,
@@ -236,20 +251,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                   _buildFlatSectionList([
                     _FlatTile(
-                      icon: Icons.language_rounded,
+                      icon: AppIcons.language,
                       title: 'App Language',
                       trailingText: 'English',
                       onTap: () => _showFeatureSnackBar('Language selector'),
                     ),
                     _FlatTile(
-                      icon: Icons.headset_mic_outlined,
+                      icon: AppIcons.support,
                       title: 'Help & Live Support',
-                      onTap: () => _showFeatureSnackBar('Customer support'),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const HelpSupportScreen()),
+                      ),
                     ),
                     _FlatTile(
-                      icon: Icons.shield_outlined,
+                      icon: AppIcons.privacy,
                       title: 'Privacy & Terms',
-                      onTap: () => _showFeatureSnackBar('Terms & privacy policy'),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const PrivacyTermsScreen()),
+                      ),
                     ),
                   ]),
 
@@ -282,9 +301,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  /// Flat header: avatar, name, email — no gradient card, no stat row.
-  /// Matches the simpler drawer-style reference while staying a normal
-  /// full screen reached the same way as before.
+  /// Flat, minimal header — avatar, name, email only.
   Widget _buildProfileHeader({
     required User? user,
     required String displayName,
@@ -327,8 +344,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     shape: BoxShape.circle,
                     border: Border.all(color: Colors.white, width: 2),
                   ),
-                  child: const Icon(
-                    Icons.camera_alt_rounded,
+                  child: HugeIcon(
+                    icon: AppIcons.camera,
                     color: Colors.white,
                     size: 12,
                   ),
@@ -371,7 +388,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  /// A flat list of rows with thin dividers — no card border, no shadow.
   Widget _buildFlatSectionList(List<_FlatTile> tiles) {
     return Column(
       children: [
@@ -512,15 +528,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     if (!mounted) return;
 
-    // Evict old and new cached network images.
     _evictNetworkImage(oldImageUrl);
     final newImageUrl = context.read<ProfileCubit>().state.user?.profileImage;
     _evictNetworkImage(newImageUrl);
 
     if (success) {
       setState(() {
-        _profileImage = null; // let state.user.profileImage drive the avatar
-        _imageKey++;          // bust the NetworkImage cache
+        _profileImage = null;
+        _imageKey++;
       });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -543,7 +558,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  /// Evicts [url] from Flutter's image cache if it is a network URL.
   void _evictNetworkImage(String? url) {
     if (url == null || url.isEmpty) return;
     final resolved = UserModel.resolveImageUrl(url);
@@ -593,11 +607,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 }
 
-/// A single flat row: icon, title, and an optional trailing chip/text/
-/// switch, with no card background or border — matches the minimal,
-/// list-style reference design.
-class _FlatTile extends StatelessWidget {
-  final IconData icon;
+  class _FlatTile extends StatelessWidget {
+  final AppIcon icon;
   final String title;
   final String? trailingText;
   final Widget? trailingWidget;
@@ -619,7 +630,7 @@ class _FlatTile extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 14),
         child: Row(
           children: [
-            Icon(icon, color: const Color(0xFF334155), size: 22),
+            HugeIcon(icon: icon, color: const Color(0xFF334155), size: 22),
             const SizedBox(width: 16),
             Expanded(
               child: Text(
@@ -644,10 +655,10 @@ class _FlatTile extends StatelessWidget {
                   ),
                 ),
               const SizedBox(width: 4),
-              const Icon(
-                Icons.chevron_right_rounded,
-                color: Color(0xFF94A3B8),
-                size: 20,
+              HugeIcon(
+                icon: AppIcons.chevronRight,
+                color: const Color(0xFF94A3B8),
+                size: 18,
               ),
             ],
           ],

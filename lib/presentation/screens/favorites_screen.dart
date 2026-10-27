@@ -8,6 +8,9 @@ import 'package:e_commerce/presentation/screens/product_detail_screen.dart';
 import 'package:e_commerce/presentation/widgets/home/product_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:e_commerce/core/theme/app_icons.dart';
+import 'package:hugeicons/hugeicons.dart';
+import 'package:e_commerce/presentation/widgets/common/app_back_button.dart';
 
 const _primaryGreen = Color(0xFF26AD71);
 
@@ -62,20 +65,16 @@ class FavoritesScreen extends StatelessWidget {
                     onTap: () {
                       if (Navigator.canPop(context)) Navigator.pop(context);
                     },
-                    child: const Icon(
-                      Icons.arrow_back_rounded,
-                      color: Color(0xFF0F172A),
-                      size: 20,
-                    ),
+                    child: const AppBackButton(),
                   ),
                   _CircleButton(
                     onTap: () {},
                     child: Stack(
                       alignment: Alignment.center,
                       children: [
-                        const Icon(
-                          Icons.notifications_rounded,
-                          color: Color(0xFF0F172A),
+                        HugeIcon(
+                          icon: AppIcons.notification,
+                          color: const Color(0xFF0F172A),
                           size: 20,
                         ),
                         Positioned(

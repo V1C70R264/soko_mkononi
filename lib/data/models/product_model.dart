@@ -11,6 +11,11 @@ class ProductModel extends ProductEntity {
     required super.categoryId,
     required super.imageUrl,
     required super.isFavorited,
+    super.averageRating,
+    super.reviewCount = 0,
+    super.storeId,
+    super.storeName,
+    
   });
 
   factory ProductModel.fromJson(Map<String, dynamic> json) {
@@ -24,6 +29,12 @@ class ProductModel extends ProductEntity {
       categoryId: json['category_details']['id'] as int,
       imageUrl: json['image'] as String? ?? '',
       isFavorited: json['is_favorited'] as bool? ?? false,
+      averageRating: json['average_rating'] != null
+        ? (json['average_rating'] as num).toDouble()
+        : null,
+      reviewCount: json['review_count'] as int? ?? 0,
+      storeId: json['store_id'] as int?,
+      storeName: json['store_name'] as String?,
     );
   }
 }

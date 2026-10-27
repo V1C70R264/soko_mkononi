@@ -1,4 +1,6 @@
+import 'package:e_commerce/core/theme/app_icons.dart';
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 
 /// A purely presentational product card. It knows nothing about entities,
 /// BLoCs or layout width: the screen decides all of that.
@@ -80,11 +82,20 @@ class ProductCard extends StatelessWidget {
                         child: SizedBox(
                           width: 32,
                           height: 32,
-                          child: Icon(
-                            isFavorited ? Icons.favorite : Icons.favorite_border,
-                            size: 20,
-                            color:
-                                isFavorited ? Colors.red : scheme.onSurfaceVariant,
+                          child: Center(
+                            // The free Hugeicons set is stroke-only, so the
+                            // "favorited" state uses a solid Material heart.
+                            child: isFavorited
+                                ? const Icon(
+                                    Icons.favorite,
+                                    size: 20,
+                                    color: Colors.red,
+                                  )
+                                : HugeIcon(
+                                    icon: AppIcons.favorite,
+                                    size: 20,
+                                    color: scheme.onSurfaceVariant,
+                                  ),
                           ),
                         ),
                       ),
@@ -103,10 +114,12 @@ class ProductCard extends StatelessWidget {
                         child: SizedBox(
                           width: 32,
                           height: 32,
-                          child: Icon(
-                            Icons.add,
-                            size: 20,
-                            color: scheme.surfaceContainerHigh,
+                          child: Center(
+                            child: HugeIcon(
+                              icon: AppIcons.add,
+                              size: 20,
+                              color: scheme.surfaceContainerHigh,
+                            ),
                           ),
                         ),
                       ),

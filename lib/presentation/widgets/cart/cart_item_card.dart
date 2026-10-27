@@ -1,7 +1,8 @@
 import 'package:e_commerce/domain/entities/cart_item_entity.dart';
 import 'package:e_commerce/presentation/widgets/cart/quantity_selector.dart';
 import 'package:flutter/material.dart';
-
+import 'package:e_commerce/core/theme/app_icons.dart';
+import 'package:hugeicons/hugeicons.dart';
 /// Layout tokens for the cart screen.
 abstract final class CartLayout {
   static const double horizontalPadding = 20;
@@ -86,9 +87,9 @@ class CartItemCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                       child: Padding(
                         padding: const EdgeInsets.all(4),
-                        child: Icon(
-                          Icons.delete_outline,
-                          size: 22,
+                        child: HugeIcon(
+                          icon: AppIcons.delete,
+                          size: 20,
                           color: scheme.onSurfaceVariant,
                         ),
                       ),

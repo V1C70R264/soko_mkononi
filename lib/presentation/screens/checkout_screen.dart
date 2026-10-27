@@ -15,6 +15,8 @@ import 'package:e_commerce/presentation/screens/addresses_screen.dart';
 import 'package:e_commerce/presentation/screens/orders_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:e_commerce/core/theme/app_icons.dart';
+import 'package:hugeicons/hugeicons.dart';
 
 enum _PaymentOption { payOnDelivery, debitCard, googlePay }
 
@@ -123,21 +125,21 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         _SectionTitle('Payment Options'),
                         const SizedBox(height: 10),
                         _PaymentOptionTile(
-                          icon: Icons.local_shipping_outlined,
+                          icon: AppIcons.delivery,
                           label: 'Pay on Delivery',
                           selected: _selectedPayment == _PaymentOption.payOnDelivery,
                           onTap: () => _selectPayment(_PaymentOption.payOnDelivery),
                         ),
                         const SizedBox(height: 10),
                         _PaymentOptionTile(
-                          icon: Icons.credit_card_outlined,
+                          icon: AppIcons.card,
                           label: 'Debit Card',
                           selected: _selectedPayment == _PaymentOption.debitCard,
                           onTap: () => _selectPayment(_PaymentOption.debitCard),
                         ),
                         const SizedBox(height: 10),
                         _PaymentOptionTile(
-                          icon: Icons.g_mobiledata_rounded,
+                          icon: AppIcons.wallet,
                           label: 'Google Pay',
                           selected: _selectedPayment == _PaymentOption.googlePay,
                           onTap: () => _selectPayment(_PaymentOption.googlePay),
@@ -274,7 +276,7 @@ class _ShippingAddressCard extends StatelessWidget {
                   const Spacer(),
                   TextButton.icon(
                     onPressed: onAddEditTap,
-                    icon: const Icon(Icons.add, size: 18),
+                    icon: HugeIcon(icon: AppIcons.add, size: 18, color: scheme.primary),
                     label: const Text('Add/Edit Address'),
                     style: TextButton.styleFrom(
                       foregroundColor: scheme.primary,
@@ -309,24 +311,24 @@ class _ShippingAddressCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _AddressRow(
-                          icon: Icons.person_outline_rounded,
+                          icon: AppIcons.account,
                           text: address.fullName,
                         ),
                         if (email != null && email.isNotEmpty) ...[
                           const SizedBox(height: 8),
                           _AddressRow(
-                            icon: Icons.email_outlined,
+                            icon: AppIcons.email,
                             text: email,
                           ),
                         ],
                         const SizedBox(height: 8),
                         _AddressRow(
-                          icon: Icons.phone_outlined,
+                          icon: AppIcons.phone,
                           text: address.phoneNumber,
                         ),
                         const SizedBox(height: 8),
                         _AddressRow(
-                          icon: Icons.location_on_outlined,
+                          icon: AppIcons.location,
                           text: '${address.streetAddress}, '
                               '${address.district} - ${address.region}',
                         ),
@@ -344,7 +346,7 @@ class _ShippingAddressCard extends StatelessWidget {
 }
 
 class _AddressRow extends StatelessWidget {
-  final IconData icon;
+  final AppIcon icon;
   final String text;
   const _AddressRow({required this.icon, required this.text});
 
@@ -354,7 +356,7 @@ class _AddressRow extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 18, color: scheme.onSurfaceVariant),
+        HugeIcon(icon: icon, size: 18, color: scheme.onSurfaceVariant),
         const SizedBox(width: 10),
         Expanded(
           child: Text(
@@ -371,7 +373,7 @@ class _AddressRow extends StatelessWidget {
 }
 
 class _PaymentOptionTile extends StatelessWidget {
-  final IconData icon;
+  final AppIcon icon;
   final String label;
   final bool selected;
   final VoidCallback onTap;
@@ -397,7 +399,7 @@ class _PaymentOptionTile extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           child: Row(
             children: [
-              Icon(icon, color: scheme.onSurfaceVariant),
+              HugeIcon(icon: icon, color: scheme.onSurfaceVariant),
               const SizedBox(width: 14),
               Expanded(
                 child: Text(

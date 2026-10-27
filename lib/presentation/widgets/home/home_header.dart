@@ -8,6 +8,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:e_commerce/domain/entities/category_entity.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:e_commerce/core/theme/app_icons.dart';
+import 'package:hugeicons/hugeicons.dart';
 
 class HomeHeader extends StatelessWidget {
   final String userName;
@@ -137,9 +139,9 @@ class HomeHeader extends StatelessWidget {
                     child: Stack(
                       alignment: Alignment.center,
                       children: [
-                        const Icon(
-                          Icons.notifications_rounded,
-                          color: Color(0xFF0F172A),
+                        HugeIcon(
+                          icon: AppIcons.notification,
+                          color: const Color(0xFF0F172A),
                           size: 20,
                         ),
                         BlocBuilder<NotificationsBloc, NotificationsState>(

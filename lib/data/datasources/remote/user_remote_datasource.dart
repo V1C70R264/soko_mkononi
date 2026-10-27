@@ -15,6 +15,11 @@ abstract class UserRemoteDatasource {
     String? lastName,
     String? phoneNumber,
   });
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+    required String confirmPassword,
+  });
 }
 
 class UserRemoteDatasourceImpl implements UserRemoteDatasource {
@@ -198,5 +203,35 @@ class UserRemoteDatasourceImpl implements UserRemoteDatasource {
       return data['message'].toString();
     }
     return fallback;
+  }
+
+  // add to UserRemoteDatasourceImpl, matching the same style as updateProfileDetails:
+  @override
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+    required String confirmPassword,
+  }) async {
+    final token = await apiClient.tokenStorage.getAccessToken();
+    if (token == null) throw Exception('No access token found');
+
+    try {
+      final response = await apiClient.dio.post(
+        '/profile/change-password/',
+        data: {
+          'current_password': currentPassword,
+          'new_password': newPassword,
+          'confirm_password': confirmPassword,
+        },
+      );
+      if (response.statusCode != 204) {
+        throw Exception('Unexpected status: ${response.statusCode}');
+      }
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401) {
+        throw Exception('Session expired. Please log in again.');
+      }
+      throw Exception(_errorMessage(e, 'Failed to change password'));
+    }
   }
 }

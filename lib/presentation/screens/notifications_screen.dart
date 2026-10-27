@@ -5,6 +5,9 @@ import 'package:e_commerce/presentation/bloc/notifications/notifications_event.d
 import 'package:e_commerce/presentation/bloc/notifications/notifications_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:e_commerce/core/theme/app_icons.dart';
+import 'package:hugeicons/hugeicons.dart';
+import 'package:e_commerce/presentation/widgets/common/app_back_button.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -20,14 +23,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     context.read<NotificationsBloc>().add(LoadNotifications());
   }
 
-  IconData _iconFor(String type) {
+    AppIcon _iconFor(String type) {
     switch (type) {
       case 'order_status':
-        return Icons.local_shipping_outlined;
+        return AppIcons.delivery;
       case 'promotion':
-        return Icons.local_offer_outlined;
+        return AppIcons.promotion;
       default:
-        return Icons.notifications_outlined;
+        return AppIcons.notification;
     }
   }
 
@@ -55,29 +58,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               padding: const EdgeInsets.fromLTRB(8, 4, 16, 8),
               child: Row(
                 children: [
-                  GestureDetector(
-                    onTap: () => Navigator.maybePop(context),
-                    child: Container(
-                      width: 42,
-                      height: 42,
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Color(0x0D000000),
-                            blurRadius: 10,
-                            offset: Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.chevron_left_rounded,
-                        size: 26,
-                        color: Colors.black87,
-                      ),
-                    ),
-                  ),
+                  const AppBackButton(),
                   const Expanded(
                     child: Text(
                       'Notifications',
@@ -195,7 +176,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
 class _NotificationCard extends StatelessWidget {
   final NotificationEntity notification;
-  final IconData icon;
+  final AppIcon icon;
   final String timeAgo;
   final VoidCallback onTap;
 
@@ -241,10 +222,12 @@ class _NotificationCard extends StatelessWidget {
                     : Colors.grey.shade100,
                 shape: BoxShape.circle,
               ),
-              child: Icon(
-                icon,
-                size: 20,
-                color: isUnread ? AppTheme.primaryGreen : Colors.grey.shade500,
+              child: Center(
+                child: HugeIcon(
+                  icon: icon,
+                  size: 20,
+                  color: isUnread ? AppTheme.primaryGreen : Colors.grey.shade500,
+                ),
               ),
             ),
             const SizedBox(width: 12),

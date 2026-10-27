@@ -1,3 +1,4 @@
+// profile_cubit.dart — full file
 import 'dart:io';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -5,17 +6,20 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../domain/usecases/user/get_user_profile.dart';
 import '../../domain/usecases/user/update_profile_details.dart';
 import '../../domain/usecases/user/update_user_profile_image.dart';
+import '../../domain/usecases/user/change_password.dart';
 import 'profile_state.dart';
 
 class ProfileCubit extends Cubit<ProfileState> {
   final GetUserProfile getUserProfile;
   final UpdateUserProfileImage updateUserProfileImage;
   final UpdateProfileDetails updateProfileDetails;
+  final ChangePassword changePassword;
 
   ProfileCubit(
     this.getUserProfile,
     this.updateUserProfileImage,
     this.updateProfileDetails,
+    this.changePassword,
   ) : super(const ProfileState());
 
   // ─── Fetch ─────────────────────────────────────────────────────────────────
@@ -86,6 +90,46 @@ class ProfileCubit extends Cubit<ProfileState> {
   void clearUpdateSuccess() {
     if (state.updateSuccess) {
       emit(state.copyWith(updateSuccess: false));
+    }
+  }
+
+  // ─── Password change ─────────────────────────────────────────────────────
+
+  Future<bool> changeUserPassword({
+    required String currentPassword,
+    required String newPassword,
+    required String confirmPassword,
+  }) async {
+    if (state.isChangingPassword) return false;
+
+    emit(state.copyWith(
+      isChangingPassword: true,
+      passwordChangeSuccess: false,
+      error: null,
+    ));
+    try {
+      await changePassword(
+        currentPassword: currentPassword,
+        newPassword: newPassword,
+        confirmPassword: confirmPassword,
+      );
+      emit(state.copyWith(
+        isChangingPassword: false,
+        passwordChangeSuccess: true,
+        error: null,
+      ));
+      return true;
+    } catch (e) {
+      final errorMsg = e.toString().replaceAll(RegExp(r'^Exception:\s*'), '');
+      emit(state.copyWith(error: errorMsg, isChangingPassword: false));
+      return false;
+    }
+  }
+
+  /// Same consume-and-reset pattern as [clearUpdateSuccess].
+  void clearPasswordChangeSuccess() {
+    if (state.passwordChangeSuccess) {
+      emit(state.copyWith(passwordChangeSuccess: false));
     }
   }
 }

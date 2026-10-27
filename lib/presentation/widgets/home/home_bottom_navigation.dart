@@ -1,7 +1,8 @@
+import 'package:e_commerce/core/theme/app_icons.dart';
 import 'package:e_commerce/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 
-/// Center-docked floating shopping cart button with light outer ring matching reference screenshot.
 class HomeCartFab extends StatelessWidget {
   final bool isSelected;
   final VoidCallback onTap;
@@ -19,7 +20,7 @@ class HomeCartFab extends StatelessWidget {
       height: 62,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: const Color(0xFFE8F5EE), // Outer ring glow matching screenshot
+        color: const Color(0xFFE8F5EE),
         boxShadow: [
           BoxShadow(
             color: AppTheme.primaryGreen.withValues(alpha: 0.28),
@@ -37,10 +38,10 @@ class HomeCartFab extends StatelessWidget {
           onTap: onTap,
           customBorder: const CircleBorder(),
           child: const Center(
-            child: Icon(
-              Icons.shopping_cart_outlined,
+            child: HugeIcon(
+              icon: AppIcons.cart,
               color: Colors.white,
-              size: 26,
+              size: 24,
             ),
           ),
         ),
@@ -49,8 +50,6 @@ class HomeCartFab extends StatelessWidget {
   }
 }
 
-/// Custom Bottom Navigation Bar matching the exact screenshot design:
-/// Home, Favorite, [FAB Cart], Order, Account
 class HomeBottomNavigation extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
@@ -76,26 +75,26 @@ class HomeBottomNavigation extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           _NavItem(
-            icon: Icons.home_outlined,
+            icon: AppIcons.home,
             label: 'Home',
             isSelected: currentIndex == 0,
             onTap: () => onTap(0),
           ),
           _NavItem(
-            icon: Icons.favorite_border_rounded,
+            icon: AppIcons.favorite,
             label: 'Favorite',
             isSelected: currentIndex == 1,
             onTap: () => onTap(1),
           ),
-          const SizedBox(width: 48), // Space for center FAB
+          const SizedBox(width: 48),
           _NavItem(
-            icon: Icons.description_outlined,
+            icon: AppIcons.orders,
             label: 'Order',
             isSelected: currentIndex == 3,
             onTap: () => onTap(3),
           ),
           _NavItem(
-            icon: Icons.person_outline_rounded,
+            icon: AppIcons.account,
             label: 'Account',
             isSelected: currentIndex == 4,
             onTap: () => onTap(4),
@@ -107,7 +106,7 @@ class HomeBottomNavigation extends StatelessWidget {
 }
 
 class _NavItem extends StatelessWidget {
-  final IconData icon;
+  final List<List<dynamic>> icon;
   final String label;
   final bool isSelected;
   final VoidCallback onTap;
@@ -123,6 +122,7 @@ class _NavItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final activeColor = AppTheme.primaryGreen;
     const inactiveColor = Color(0xFF8C96A6);
+    final color = isSelected ? activeColor : inactiveColor;
 
     return InkWell(
       onTap: onTap,
@@ -133,18 +133,14 @@ class _NavItem extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              size: 24,
-              color: isSelected ? activeColor : inactiveColor,
-            ),
+            HugeIcon(icon: icon, size: 24, color: color),
             const SizedBox(height: 3),
             Text(
               label,
               style: TextStyle(
                 fontSize: 11.5,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                color: isSelected ? activeColor : inactiveColor,
+                color: color,
                 letterSpacing: -0.2,
               ),
             ),

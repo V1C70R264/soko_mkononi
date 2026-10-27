@@ -36,6 +36,20 @@ class UserRepositoryImpl implements UserRepository {
     return _mapToUser(userModel);
   }
 
+  // add to UserRepositoryImpl:
+  @override
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+    required String confirmPassword,
+  }) {
+    return remoteDatasource.changePassword(
+      currentPassword: currentPassword,
+      newPassword: newPassword,
+      confirmPassword: confirmPassword,
+    );
+  }
+
   // ─── Helpers ────────────────────────────────────────────────────────────────
 
   User _mapToUser(dynamic userModel) {

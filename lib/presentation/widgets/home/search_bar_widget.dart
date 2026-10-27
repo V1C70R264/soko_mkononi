@@ -1,5 +1,6 @@
+import 'package:e_commerce/core/theme/app_icons.dart';
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:hugeicons/hugeicons.dart';
 
 class SearchBarWidget extends StatelessWidget {
   final VoidCallback? onTap;
@@ -38,17 +39,17 @@ class SearchBarWidget extends StatelessWidget {
               child: InkWell(
                 onTap: onTap,
                 borderRadius: BorderRadius.circular(26),
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 18),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 18),
                   child: Row(
                     children: [
-                      Icon(
-                        Icons.search_rounded,
+                      HugeIcon(
+                        icon: AppIcons.search,
                         size: 22,
-                        color: Color(0xFF94A3B8),
+                        color: const Color(0xFF94A3B8),
                       ),
-                      SizedBox(width: 12),
-                      Expanded(
+                      const SizedBox(width: 12),
+                      const Expanded(
                         child: Text(
                           'Search...',
                           style: TextStyle(
@@ -88,11 +89,11 @@ class SearchBarWidget extends StatelessWidget {
             child: InkWell(
               onTap: onFilterTap,
               borderRadius: BorderRadius.circular(22),
-              child: const Center(
-                child: FaIcon(
-                  FontAwesomeIcons.sliders,
+              child: Center(
+                child: HugeIcon(
+                  icon: AppIcons.filter,
                   color: Colors.white,
-                  size: 18,
+                  size: 20,
                 ),
               ),
             ),
